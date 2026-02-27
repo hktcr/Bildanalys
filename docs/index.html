@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SharpFrame — Skärpeanalys</title>
+    <meta name="description" content="Extrahera de skarpaste bildrutorna ur din video — direkt i webbläsaren.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-card: #111827;
+            --bg-card-hover: #1a2235;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(99, 179, 237, 0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #63b3ed;
+            --accent-glow: rgba(99, 179, 237, 0.15);
+            --green: #48bb78;
+            --amber: #ecc94b;
+            --rose: #f56565;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            --transition: 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .app {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* ─── Header ─── */
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .logo h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 300;
+        }
+
+        /* ─── Cards ─── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .card-header h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .step-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--bg-primary);
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .step-badge.done {
+            background: var(--green);
+        }
+
+        .step-badge.pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.5
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ─── Drop Zone ─── */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .drop-zone-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .drop-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .drop-zone p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+        }
+
+        .drop-divider {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .file-btn {
+            display: inline-block;
+            padding: 0.6rem 1.4rem;
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .file-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(99, 179, 237, 0.3);
+        }
+
+        .upload-error {
+            margin-top: 0.75rem;
+            padding: 0.6rem 1rem;
+            background: rgba(245, 101, 101, 0.1);
+            border: 1px solid rgba(245, 101, 101, 0.3);
+            border-radius: var(--radius-sm);
+            color: var(--rose);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        /* ─── Info ─── */
+        .video-info {
+            margin-top: 1rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* ─── Video ─── */
+        .video-container {
+            margin-bottom: 1.25rem;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            background: #000;
+        }
+
+        .video-container video {
+            width: 100%;
+            display: block;
+            max-height: 400px;
+            object-fit: contain;
+        }
+
+        .timeline-controls {
+            margin-bottom: 1.5rem;
+        }
+
+        .range-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .range-row label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            min-width: 40px;
+        }
+
+        .range-row input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+
+        .range-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(99, 179, 237, 0.4);
+        }
+
+        .time-display {
+            font-family: 'Inter', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .settings-row {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .setting {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .setting label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .setting input[type="number"] {
+            padding: 0.5rem 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+
+        .setting input[type="number"]:focus {
+            border-color: var(--accent);
+        }
+
+        /* ─── Buttons ─── */
+        .primary-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.85rem 2rem;
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(99, 179, 237, 0.3);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .secondary-btn {
+            padding: 0.65rem 1.5rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .secondary-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* ─── Progress ─── */
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #7c3aed);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-message {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* ─── Results ─── */
+        .results-summary {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .results-summary strong {
+            color: var(--accent);
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .sort-btn {
+            padding: 0.4rem 1rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .sort-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-secondary);
+        }
+
+        .sort-btn.active {
+            background: var(--accent-glow);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-card {
+            background: var(--bg-card-hover);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: all var(--transition);
+        }
+
+        .result-card:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-thumb {
+            position: relative;
+            background: #000;
+            aspect-ratio: 16/9;
+            overflow: hidden;
+        }
+
+        .result-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .result-time {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            padding: 0.2rem 0.5rem;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .result-scores {
+            padding: 1rem;
+        }
+
+        .score-main {
+            display: flex;
+            align-items: baseline;
+            gap: 0.4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .score-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .score-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .score-name {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            min-width: 68px;
+        }
+
+        .bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .bar-fill.exposure {
+            background: var(--amber);
+        }
+
+        .bar-fill.contrast {
+            background: var(--green);
+        }
+
+        .score-num {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            min-width: 24px;
+            text-align: right;
+        }
+
+        .download-btn {
+            display: block;
+            padding: 0.65rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all var(--transition);
+            cursor: pointer;
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .download-btn:hover {
+            background: var(--accent-glow);
+            color: var(--accent);
+        }
+
+        .results-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem 0 1rem;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        @media (max-width:640px) {
+            .app {
+                padding: 1rem;
+            }
+
+            .settings-row {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">◈</span>
+                <h1>SharpFrame</h1>
+            </div>
+            <p class="subtitle">Extrahera de skarpaste bildrutorna ur din video — direkt i webbläsaren</p>
+        </header>
+
+        <!-- Steg 1: Ladda video -->
+        <section id="upload-section" class="card">
+            <div class="card-header">
+                <span class="step-badge">1</span>
+                <h2>Ladda video</h2>
+            </div>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-zone-content">
+                    <div class="drop-icon">🎬</div>
+                    <p>Dra och släpp en videofil här</p>
+                    <span class="drop-divider">eller</span>
+                    <label class="file-btn">
+                        Välj fil
+                        <input type="file" id="file-input" accept="video/*,.mp4,.mov,.mkv,.avi,.m4v,.webm" hidden>
+                    </label>
+                </div>
+            </div>
+            <div id="upload-error" class="upload-error hidden"></div>
+            <div id="video-info" class="video-info hidden">
+                <div class="info-grid">
+                    <div class="info-item"><span class="info-label">Fil</span><span id="info-filename"
+                            class="info-value">—</span></div>
+                    <div class="info-item"><span class="info-label">Upplösning</span><span id="info-resolution"
+                            class="info-value">—</span></div>
+                    <div class="info-item"><span class="info-label">Längd</span><span id="info-duration"
+                            class="info-value">—</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Steg 2: Inställningar -->
+        <section id="settings-section" class="card hidden">
+            <div class="card-header">
+                <span class="step-badge">2</span>
+                <h2>Välj tidsintervall</h2>
+            </div>
+            <div class="video-container">
+                <video id="video-player" controls></video>
+            </div>
+            <div class="timeline-controls">
+                <div class="range-group">
+                    <div class="range-row">
+                        <label>Start</label>
+                        <input type="range" id="start-range" min="0" max="100" value="0" step="0.1">
+                        <span id="start-time-display" class="time-display">0:00</span>
+                    </div>
+                    <div class="range-row">
+                        <label>Slut</label>
+                        <input type="range" id="end-range" min="0" max="100" value="100" step="0.1">
+                        <span id="end-time-display" class="time-display">0:00</span>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="setting">
+                        <label for="top-n">Antal bilder</label>
+                        <input type="number" id="top-n" value="10" min="1" max="50">
+                    </div>
+                    <div class="setting">
+                        <label for="min-gap">Min. avstånd (sek)</label>
+                        <input type="number" id="min-gap" value="1.0" min="0.1" max="30" step="0.1">
+                    </div>
+                    <div class="setting">
+                        <label for="sample-interval">Sampla var (sek)</label>
+                        <input type="number" id="sample-interval" value="0.5" min="0.1" max="5" step="0.1">
+                    </div>
+                </div>
+            </div>
+            <button id="analyze-btn" class="primary-btn">
+                <span class="btn-icon">🔍</span> Analysera
+            </button>
+        </section>
+
+        <!-- Progress -->
+        <section id="progress-section" class="card hidden">
+            <div class="card-header">
+                <span class="step-badge pulse">⏳</span>
+                <h2>Analyserar...</h2>
+            </div>
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar" style="width:0%"></div>
+            </div>
+            <p id="progress-message" class="progress-message">Startar...</p>
+        </section>
+
+        <!-- Steg 3: Resultat -->
+        <section id="results-section" class="card hidden">
+            <div class="card-header">
+                <span class="step-badge done">✓</span>
+                <h2>Resultat</h2>
+            </div>
+            <div id="results-summary" class="results-summary"></div>
+            <div class="sort-controls">
+                <button class="sort-btn active" data-sort="composite">Kvalitet</button>
+                <button class="sort-btn" data-sort="time">Kronologisk</button>
+                <button class="sort-btn" data-sort="sharpness">Skärpa</button>
+            </div>
+            <div id="results-grid" class="results-grid"></div>
+            <div class="results-actions">
+                <button id="new-analysis-btn" class="secondary-btn">Ny analys</button>
+            </div>
+        </section>
+
+        <footer class="footer">SharpFrame — GAIA-Tools 🌲</footer>
+    </div>
+
+    <canvas id="analysis-canvas"></canvas>
+
+    <script>
+        // ─── State ──────────────────────────────────────────────────
+        let videoFile = null;
+        let videoUrl = null;
+        let videoDuration = 0;
+        let currentResults = null;
+
+        const videoPlayer = document.getElementById('video-player');
+        const canvas = document.getElementById('analysis-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        // ─── Tidsformatering ────────────────────────────────────────
+        function fmt(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            return `${m}:${String(s).padStart(2, '0')}`;
+        }
+        function fmtFile(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${String(m).padStart(2, '0')}m${String(s).padStart(2, '0')}s`;
+        }
+
+        // ─── Drag & Drop ────────────────────────────────────────────
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const videoExts = ['.mp4', '.mov', '.mkv', '.avi', '.m4v', '.webm', '.mts', '.mpg', '.mpeg'];
+
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (file.type.startsWith('video/') || videoExts.includes(ext)) {
+                loadVideo(file);
+            } else {
+                showError(`Filtypen "${ext}" stöds inte.`);
+            }
+        });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) loadVideo(e.target.files[0]); });
+
+        function showError(msg) {
+            const el = document.getElementById('upload-error');
+            el.textContent = '⚠️ ' + msg;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
+        }
+
+        // ─── Ladda video ────────────────────────────────────────────
+        function loadVideo(file) {
+            videoFile = file;
+            if (videoUrl) URL.revokeObjectURL(videoUrl);
+            videoUrl = URL.createObjectURL(file);
+
+            videoPlayer.src = videoUrl;
+            videoPlayer.addEventListener('loadedmetadata', function onMeta() {
+                videoPlayer.removeEventListener('loadedmetadata', onMeta);
+                videoDuration = videoPlayer.duration;
+
+                document.getElementById('info-filename').textContent = file.name;
+                document.getElementById('info-resolution').textContent =
+                    `${videoPlayer.videoWidth}×${videoPlayer.videoHeight}`;
+                document.getElementById('info-duration').textContent = fmt(videoDuration);
+
+                document.getElementById('video-info').classList.remove('hidden');
+                dropZone.classList.add('hidden');
+
+                // Tidslinje
+                const sr = document.getElementById('start-range');
+                const er = document.getElementById('end-range');
+                sr.max = videoDuration; sr.value = 0;
+                er.max = videoDuration; er.value = videoDuration;
+                document.getElementById('start-time-display').textContent = fmt(0);
+                document.getElementById('end-time-display').textContent = fmt(videoDuration);
+
+                sr.addEventListener('input', () => {
+                    if (parseFloat(sr.value) >= parseFloat(er.value)) sr.value = parseFloat(er.value) - 0.1;
+                    document.getElementById('start-time-display').textContent = fmt(parseFloat(sr.value));
+                    videoPlayer.currentTime = parseFloat(sr.value);
+                });
+                er.addEventListener('input', () => {
+                    if (parseFloat(er.value) <= parseFloat(sr.value)) er.value = parseFloat(sr.value) + 0.1;
+                    document.getElementById('end-time-display').textContent = fmt(parseFloat(er.value));
+                    videoPlayer.currentTime = parseFloat(er.value);
+                });
+
+                document.getElementById('settings-section').classList.remove('hidden');
+                document.getElementById('settings-section').scrollIntoView({ behavior: 'smooth' });
+            }, { once: true });
+        }
+
+        // ─── Bildanalys (Canvas) ────────────────────────────────────
+        function computeSharpness(imageData) {
+            const d = imageData.data, w = imageData.width, h = imageData.height;
+            // Konvertera till gråskala och beräkna Laplacian variance
+            const gray = new Float64Array(w * h);
+            for (let i = 0; i < w * h; i++) {
+                const idx = i * 4;
+                gray[i] = 0.299 * d[idx] + 0.587 * d[idx + 1] + 0.114 * d[idx + 2];
+            }
+            // Laplacian: ∇²f = f(x-1,y) + f(x+1,y) + f(x,y-1) + f(x,y+1) - 4·f(x,y)
+            let sum = 0, sumSq = 0, count = 0;
+            for (let y = 1; y < h - 1; y++) {
+                for (let x = 1; x < w - 1; x++) {
+                    const idx = y * w + x;
+                    const lap = gray[idx - 1] + gray[idx + 1] + gray[idx - w] + gray[idx + w] - 4 * gray[idx];
+                    sum += lap;
+                    sumSq += lap * lap;
+                    count++;
+                }
+            }
+            const mean = sum / count;
+            return (sumSq / count) - (mean * mean); // variance
+        }
+
+        function computeExposure(imageData) {
+            const d = imageData.data;
+            let sum = 0;
+            const pixels = d.length / 4;
+            for (let i = 0; i < d.length; i += 4) {
+                sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+            }
+            const mean = sum / pixels;
+            return (1 - Math.abs(mean - 128) / 128) * 100;
+        }
+
+        function computeContrast(imageData) {
+            const d = imageData.data;
+            let sum = 0, sumSq = 0;
+            const pixels = d.length / 4;
+            for (let i = 0; i < d.length; i += 4) {
+                const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                sum += lum;
+                sumSq += lum * lum;
+            }
+            const mean = sum / pixels;
+            return Math.sqrt(sumSq / pixels - mean * mean);
+        }
+
+        // ─── Fånga bildruta ─────────────────────────────────────────
+        function seekAndCapture(video, time) {
+            return new Promise((resolve) => {
+                video.currentTime = time;
+                video.addEventListener('seeked', function onSeeked() {
+                    video.removeEventListener('seeked', onSeeked);
+                    // Använd nedskalning för snabbare analys
+                    const scale = Math.min(1, 720 / video.videoHeight);
+                    const w = Math.round(video.videoWidth * scale);
+                    const h = Math.round(video.videoHeight * scale);
+                    canvas.width = w;
+                    canvas.height = h;
+                    ctx.drawImage(video, 0, 0, w, h);
+                    const imageData = ctx.getImageData(0, 0, w, h);
+                    resolve(imageData);
+                }, { once: true });
+            });
+        }
+
+        function captureFullRes(video, time) {
+            return new Promise((resolve) => {
+                video.currentTime = time;
+                video.addEventListener('seeked', function onSeeked() {
+                    video.removeEventListener('seeked', onSeeked);
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                }, { once: true });
+            });
+        }
+
+        // ─── Huvudanalys ────────────────────────────────────────────
+        document.getElementById('analyze-btn').addEventListener('click', runAnalysis);
+
+        async function runAnalysis() {
+            const startTime = parseFloat(document.getElementById('start-range').value);
+            const endTime = parseFloat(document.getElementById('end-range').value);
+            const topN = parseInt(document.getElementById('top-n').value);
+            const minGap = parseFloat(document.getElementById('min-gap').value);
+            const sampleInterval = parseFloat(document.getElementById('sample-interval').value);
+
+            const btn = document.getElementById('analyze-btn');
+            btn.disabled = true;
+
+            const progressSection = document.getElementById('progress-section');
+            const resultsSection = document.getElementById('results-section');
+            const progressBar = document.getElementById('progress-bar');
+            const progressMsg = document.getElementById('progress-message');
+
+            progressSection.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            progressBar.style.width = '0%';
+            progressSection.scrollIntoView({ behavior: 'smooth' });
+
+            // Generera tidsstämplar att sampla
+            const times = [];
+            for (let t = startTime; t <= endTime; t += sampleInterval) {
+                times.push(t);
+            }
+
+            progressMsg.textContent = `Analyserar ${times.length} bildrutor...`;
+
+            // Skapa en separat video-element för analys
+            const analysisVideo = document.createElement('video');
+            analysisVideo.src = videoUrl;
+            analysisVideo.muted = true;
+            analysisVideo.preload = 'auto';
+            await new Promise(r => { analysisVideo.addEventListener('loadeddata', r, { once: true }); analysisVideo.load(); });
+
+            // Steg 1: Beräkna scores
+            const scored = [];
+            for (let i = 0; i < times.length; i++) {
+                const t = times[i];
+                const imageData = await seekAndCapture(analysisVideo, t);
+
+                const sharpnessRaw = computeSharpness(imageData);
+                const exposure = computeExposure(imageData);
+                const contrast = computeContrast(imageData);
+
+                scored.push({ time: t, sharpnessRaw, exposure, contrast });
+
+                const pct = ((i + 1) / times.length * 80).toFixed(0);
+                progressBar.style.width = pct + '%';
+                progressMsg.textContent = `Analyserar bildruta ${i + 1}/${times.length} (${fmt(t)})`;
+
+                // Ge browser tid att uppdatera UI
+                if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+            }
+
+            // Steg 2: Normalisera
+            progressMsg.textContent = 'Beräknar composite scores...';
+            progressBar.style.width = '85%';
+
+            const sharpVals = scored.map(s => s.sharpnessRaw);
+            const contrastVals = scored.map(s => s.contrast);
+            const sMin = Math.min(...sharpVals), sMax = Math.max(...sharpVals);
+            const cMin = Math.min(...contrastVals), cMax = Math.max(...contrastVals);
+            const sRange = sMax > sMin ? sMax - sMin : 1;
+            const cRange = cMax > cMin ? cMax - cMin : 1;
+
+            for (const s of scored) {
+                s.sharpness = ((s.sharpnessRaw - sMin) / sRange) * 100;
+                s.contrastNorm = ((s.contrast - cMin) / cRange) * 100;
+                s.composite = 0.5 * s.sharpness + 0.25 * s.exposure + 0.25 * s.contrastNorm;
+            }
+
+            // Steg 3: Sortera och välj topp-N med min-gap
+            scored.sort((a, b) => b.composite - a.composite);
+            const selected = [];
+            for (const candidate of scored) {
+                if (selected.length >= topN) break;
+                const tooClose = selected.some(s => Math.abs(candidate.time - s.time) < minGap);
+                if (!tooClose) selected.push(candidate);
+            }
+
+            // Steg 4: Generera fullupplösta bilder
+            progressMsg.textContent = 'Genererar bilder...';
+            progressBar.style.width = '90%';
+
+            selected.sort((a, b) => a.time - b.time);
+            const results = [];
+            for (let i = 0; i < selected.length; i++) {
+                const s = selected[i];
+                const dataUrl = await captureFullRes(analysisVideo, s.time);
+                results.push({
+                    rank: i + 1,
+                    time: s.time,
+                    timeStr: fmtFile(s.time),
+                    composite: Math.round(s.composite),
+                    sharpness: Math.round(s.sharpness),
+                    exposure: Math.round(s.exposure),
+                    contrast: Math.round(s.contrastNorm),
+                    dataUrl: dataUrl,
+                    filename: `${videoFile.name.replace(/\.[^.]+$/, '')}_${fmtFile(s.time)}_q${Math.round(s.composite)}.png`
+                });
+
+                const pct = 90 + ((i + 1) / selected.length * 10);
+                progressBar.style.width = pct.toFixed(0) + '%';
+            }
+
+            analysisVideo.remove();
+
+            // Visa resultat
+            progressBar.style.width = '100%';
+            progressMsg.textContent = 'Klart!';
+            currentResults = results;
+
+            document.getElementById('results-summary').innerHTML =
+                `<p>Analyserade <strong>${times.length}</strong> bildrutor, valde <strong>${results.length}</strong> bilder.</p>`;
+
+            renderResults(results, 'composite');
+            progressSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+            btn.disabled = false;
+        }
+
+        // ─── Rendera resultat ───────────────────────────────────────
+        function renderResults(results, sortBy) {
+            const sorted = [...results].sort((a, b) => {
+                if (sortBy === 'time') return a.time - b.time;
+                if (sortBy === 'sharpness') return b.sharpness - a.sharpness;
+                return b.composite - a.composite;
+            });
+
+            document.getElementById('results-grid').innerHTML = sorted.map(r => `
+            <div class="result-card">
+                <div class="result-thumb">
+                    <img src="${r.dataUrl}" alt="Frame ${r.rank}" loading="lazy">
+                    <div class="result-time">${fmt(r.time)}</div>
+                </div>
+                <div class="result-scores">
+                    <div class="score-main">
+                        <span class="score-value">${r.composite}</span>
+                        <span class="score-label">kvalitet</span>
+                    </div>
+                    <div class="score-details">
+                        <div class="score-bar"><span class="score-name">Skärpa</span><div class="bar"><div class="bar-fill" style="width:${r.sharpness}%"></div></div><span class="score-num">${r.sharpness}</span></div>
+                        <div class="score-bar"><span class="score-name">Exponering</span><div class="bar"><div class="bar-fill exposure" style="width:${r.exposure}%"></div></div><span class="score-num">${r.exposure}</span></div>
+                        <div class="score-bar"><span class="score-name">Kontrast</span><div class="bar"><div class="bar-fill contrast" style="width:${r.contrast}%"></div></div><span class="score-num">${r.contrast}</span></div>
+                    </div>
+                </div>
+                <button class="download-btn" onclick="downloadImage('${r.dataUrl}','${r.filename}')">⬇ Ladda ner PNG</button>
+            </div>
+        `).join('');
+        }
+
+        // ─── Nedladdning ────────────────────────────────────────────
+        function downloadImage(dataUrl, filename) {
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = filename;
+            a.click();
+        }
+
+        // ─── Sorterknappar ──────────────────────────────────────────
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (currentResults) renderResults(currentResults, btn.dataset.sort);
+            });
+        });
+
+        // ─── Ny analys ──────────────────────────────────────────────
+        document.getElementById('new-analysis-btn').addEventListener('click', () => {
+            document.getElementById('results-section').classList.add('hidden');
+            document.getElementById('settings-section').scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
+</body>
+
+</html>
