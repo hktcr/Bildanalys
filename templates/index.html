@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SharpFrame — Skärpeanalys</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app">
+        <!-- ─── Header ──────────────────────────────────── -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">◈</span>
+                <h1>SharpFrame</h1>
+            </div>
+            <p class="subtitle">Extrahera de skarpaste bildrutorna ur din video</p>
+        </header>
+
+        <!-- ─── Steg 1: Ladda video ─────────────────────── -->
+        <section id="upload-section" class="card">
+            <div class="card-header">
+                <span class="step-badge">1</span>
+                <h2>Ladda video</h2>
+            </div>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-zone-content">
+                    <div class="drop-icon">🎬</div>
+                    <p>Dra och släpp en videofil här</p>
+                    <span class="drop-divider">eller</span>
+                    <label class="file-btn">
+                        Välj fil
+                        <input type="file" id="file-input" accept="video/*,.mp4,.mov,.mkv,.avi,.m4v,.webm" hidden>
+                    </label>
+                </div>
+            </div>
+            <div id="upload-error" class="upload-error hidden"></div>
+            <div id="video-info" class="video-info hidden">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Fil</span>
+                        <span id="info-filename" class="info-value">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Upplösning</span>
+                        <span id="info-resolution" class="info-value">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">FPS</span>
+                        <span id="info-fps" class="info-value">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Längd</span>
+                        <span id="info-duration" class="info-value">—</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Steg 2: Inställningar ───────────────────── -->
+        <section id="settings-section" class="card hidden">
+            <div class="card-header">
+                <span class="step-badge">2</span>
+                <h2>Välj tidsintervall</h2>
+            </div>
+
+            <div class="video-container">
+                <video id="video-player" controls></video>
+            </div>
+
+            <div class="timeline-controls">
+                <div class="range-group">
+                    <div class="range-row">
+                        <label>Start</label>
+                        <input type="range" id="start-range" min="0" max="100" value="0" step="0.1">
+                        <span id="start-time-display" class="time-display">0:00</span>
+                    </div>
+                    <div class="range-row">
+                        <label>Slut</label>
+                        <input type="range" id="end-range" min="0" max="100" value="100" step="0.1">
+                        <span id="end-time-display" class="time-display">0:00</span>
+                    </div>
+                </div>
+
+                <div class="settings-row">
+                    <div class="setting">
+                        <label for="top-n">Antal bilder</label>
+                        <input type="number" id="top-n" value="10" min="1" max="50">
+                    </div>
+                    <div class="setting">
+                        <label for="min-gap">Min. avstånd (sek)</label>
+                        <input type="number" id="min-gap" value="1.0" min="0.1" max="30" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <button id="analyze-btn" class="primary-btn">
+                <span class="btn-icon">🔍</span>
+                Analysera
+            </button>
+        </section>
+
+        <!-- ─── Progress ────────────────────────────────── -->
+        <section id="progress-section" class="card hidden">
+            <div class="card-header">
+                <span class="step-badge pulse">⏳</span>
+                <h2>Analyserar...</h2>
+            </div>
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+            </div>
+            <p id="progress-message" class="progress-message">Startar...</p>
+        </section>
+
+        <!-- ─── Steg 3: Resultat ────────────────────────── -->
+        <section id="results-section" class="card hidden">
+            <div class="card-header">
+                <span class="step-badge done">✓</span>
+                <h2>Resultat</h2>
+            </div>
+            <div id="results-summary" class="results-summary"></div>
+            <div class="sort-controls">
+                <button class="sort-btn active" data-sort="composite">Kvalitet</button>
+                <button class="sort-btn" data-sort="time">Kronologisk</button>
+                <button class="sort-btn" data-sort="sharpness">Skärpa</button>
+            </div>
+            <div id="results-grid" class="results-grid"></div>
+            <div class="results-actions">
+                <button id="new-analysis-btn" class="secondary-btn">Ny analys</button>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>SharpFrame — GAIA-Tools 🌲</p>
+        </footer>
+    </div>
+
+    <script>
+        // ─── State ──────────────────────────────────────────────
+        let videoMetadata = null;
+        let currentFilename = null;
+        let currentResults = null;
+
+        // ─── DOM ────────────────────────────────────────────────
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const videoInfo = document.getElementById('video-info');
+        const settingsSection = document.getElementById('settings-section');
+        const progressSection = document.getElementById('progress-section');
+        const resultsSection = document.getElementById('results-section');
+        const videoPlayer = document.getElementById('video-player');
+        const startRange = document.getElementById('start-range');
+        const endRange = document.getElementById('end-range');
+        const startTimeDisplay = document.getElementById('start-time-display');
+        const endTimeDisplay = document.getElementById('end-time-display');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const progressMessage = document.getElementById('progress-message');
+        const resultsGrid = document.getElementById('results-grid');
+        const resultsSummary = document.getElementById('results-summary');
+
+        // ─── Tidsformatering ────────────────────────────────────
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            return `${m}:${String(s).padStart(2, '0')}`;
+        }
+
+        // ─── Drag & Drop ────────────────────────────────────────
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                const videoExts = ['.mp4', '.mov', '.mkv', '.avi', '.m4v', '.webm', '.mts', '.mpg', '.mpeg', '.wmv'];
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                if (file.type.startsWith('video/') || videoExts.includes(ext)) {
+                    uploadFile(file);
+                } else {
+                    showUploadError(`Filtypen "${ext}" stöds inte. Dra in en videofil (.mp4, .mov, .mkv, etc).`);
+                }
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) uploadFile(e.target.files[0]);
+        });
+
+        function showUploadError(msg) {
+            const errEl = document.getElementById('upload-error');
+            errEl.textContent = '⚠️ ' + msg;
+            errEl.classList.remove('hidden');
+            setTimeout(() => errEl.classList.add('hidden'), 5000);
+        }
+
+        // ─── Upload ─────────────────────────────────────────────
+        async function uploadFile(file) {
+            document.getElementById('upload-error').classList.add('hidden');
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(0);
+            dropZone.innerHTML = `
+            <div class="drop-zone-content">
+                <div class="loading-spinner"></div>
+                <p>Laddar upp ${file.name} (${sizeMB} MB)...</p>
+                <div class="upload-progress-container">
+                    <div id="upload-progress" class="upload-progress" style="width:0%"></div>
+                </div>
+            </div>
+        `;
+
+            const formData = new FormData();
+            formData.append('video', file);
+
+            try {
+                // Använd XMLHttpRequest för att visa uppladdningsprogress
+                const data = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/upload');
+
+                    xhr.upload.addEventListener('progress', (e) => {
+                        if (e.lengthComputable) {
+                            const pct = (e.loaded / e.total) * 100;
+                            const bar = document.getElementById('upload-progress');
+                            if (bar) bar.style.width = pct + '%';
+                        }
+                    });
+
+                    xhr.onload = () => {
+                        try {
+                            resolve(JSON.parse(xhr.responseText));
+                        } catch (e) {
+                            reject(new Error('Servern returnerade ogiltigt svar.'));
+                        }
+                    };
+
+                    xhr.onerror = () => reject(new Error('Nätverksfel vid uppladdning.'));
+                    xhr.ontimeout = () => reject(new Error('Uppladdningen tog för lång tid.'));
+                    xhr.timeout = 300000; // 5 minuter
+                    xhr.send(formData);
+                });
+
+                if (data.error) {
+                    resetDropZone();
+                    showUploadError(data.error);
+                    return;
+                }
+
+                videoMetadata = data.metadata;
+                currentFilename = data.filename;
+
+                // Visa info
+                document.getElementById('info-filename').textContent = file.name;
+                document.getElementById('info-resolution').textContent =
+                    `${videoMetadata.width}×${videoMetadata.height}`;
+                document.getElementById('info-fps').textContent =
+                    `${videoMetadata.fps.toFixed(1)}`;
+                document.getElementById('info-duration').textContent =
+                    formatTime(videoMetadata.duration);
+
+                videoInfo.classList.remove('hidden');
+                dropZone.classList.add('hidden');
+
+                // Sätt upp video-player
+                videoPlayer.src = `/video/${currentFilename}`;
+                setupTimelineControls();
+                settingsSection.classList.remove('hidden');
+
+                // Scrolla till inställningar
+                settingsSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                resetDropZone();
+                showUploadError('Uppladdningen misslyckades: ' + err.message);
+            }
+        }
+
+        function resetDropZone() {
+            dropZone.innerHTML = `
+            <div class="drop-zone-content">
+                <div class="drop-icon">🎬</div>
+                <p>Dra och släpp en videofil här</p>
+                <span class="drop-divider">eller</span>
+                <label class="file-btn">
+                    Välj fil
+                    <input type="file" id="file-input" accept="video/*,.mp4,.mov,.mkv,.avi,.m4v,.webm" hidden>
+                </label>
+            </div>
+            `;
+            // Rebind file input
+            document.getElementById('file-input').addEventListener('change', (e) => {
+                if (e.target.files[0]) uploadFile(e.target.files[0]);
+            });
+        }
+
+        // ─── Timeline Controls ──────────────────────────────────
+        function setupTimelineControls() {
+            const duration = videoMetadata.duration;
+
+            startRange.max = duration;
+            startRange.value = 0;
+            endRange.max = duration;
+            endRange.value = duration;
+
+            startTimeDisplay.textContent = formatTime(0);
+            endTimeDisplay.textContent = formatTime(duration);
+
+            startRange.addEventListener('input', () => {
+                const val = parseFloat(startRange.value);
+                if (val >= parseFloat(endRange.value)) {
+                    startRange.value = parseFloat(endRange.value) - 0.1;
+                }
+                startTimeDisplay.textContent = formatTime(parseFloat(startRange.value));
+                videoPlayer.currentTime = parseFloat(startRange.value);
+            });
+
+            endRange.addEventListener('input', () => {
+                const val = parseFloat(endRange.value);
+                if (val <= parseFloat(startRange.value)) {
+                    endRange.value = parseFloat(startRange.value) + 0.1;
+                }
+                endTimeDisplay.textContent = formatTime(parseFloat(endRange.value));
+                videoPlayer.currentTime = parseFloat(endRange.value);
+            });
+        }
+
+        // ─── Analys ─────────────────────────────────────────────
+        analyzeBtn.addEventListener('click', startAnalysis);
+
+        async function startAnalysis() {
+            const startTime = parseFloat(startRange.value);
+            const endTime = parseFloat(endRange.value);
+            const topN = parseInt(document.getElementById('top-n').value);
+            const minGap = parseFloat(document.getElementById('min-gap').value);
+
+            analyzeBtn.disabled = true;
+            progressSection.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            progressBar.style.width = '0%';
+            progressMessage.textContent = 'Startar...';
+
+            progressSection.scrollIntoView({ behavior: 'smooth' });
+
+            try {
+                const res = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        start_time: startTime,
+                        end_time: endTime,
+                        top_n: topN,
+                        min_gap: minGap,
+                    }),
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    progressMessage.textContent = '❌ ' + data.error;
+                    analyzeBtn.disabled = false;
+                    return;
+                }
+
+                pollProgress(data.job_id);
+            } catch (err) {
+                progressMessage.textContent = '❌ Fel: ' + err.message;
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        async function pollProgress(jobId) {
+            const res = await fetch(`/progress/${jobId}`);
+            const data = await res.json();
+
+            progressBar.style.width = data.progress + '%';
+            progressMessage.textContent = data.message || '';
+
+            if (data.status === 'running') {
+                setTimeout(() => pollProgress(jobId), 500);
+                return;
+            }
+
+            analyzeBtn.disabled = false;
+
+            if (data.error) {
+                progressMessage.textContent = '❌ ' + data.error;
+                return;
+            }
+
+            if (data.status === 'done' && data.results) {
+                currentResults = data.results;
+                showResults(data);
+            }
+        }
+
+        // ─── Resultat ───────────────────────────────────────────
+        function showResults(data) {
+            progressSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+
+            const method = data.used_keyframes ? 'nyckelbilder (I-frames)' : 'sampling (var 0.5s)';
+            resultsSummary.innerHTML = `
+            <p>Analyserade <strong>${data.total_candidates}</strong> kandidater via ${method}.
+            Valde <strong>${data.selected_count}</strong> bilder.</p>
+        `;
+
+            renderResults(data.results, 'composite');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderResults(results, sortBy) {
+            const sorted = [...results].sort((a, b) => {
+                if (sortBy === 'time') return a.time - b.time;
+                if (sortBy === 'sharpness') return b.sharpness - a.sharpness;
+                return b.composite - a.composite;
+            });
+
+            // Identifiera safe_name från filepath
+            const firstResult = sorted[0];
+            const pathParts = firstResult.filepath.split('/');
+            const safeName = pathParts[pathParts.length - 2]; // mappen ovanför filen
+
+            resultsGrid.innerHTML = sorted.map((r, i) => `
+            <div class="result-card">
+                <div class="result-thumb">
+                    <img src="/thumb/${safeName}/thumbs/${r.filename}" alt="Frame ${r.rank}"
+                         loading="lazy">
+                    <div class="result-time">${r.time_str}</div>
+                    ${r.is_keyframe ? '<div class="keyframe-badge">I-frame</div>' : ''}
+                </div>
+                <div class="result-scores">
+                    <div class="score-main">
+                        <span class="score-value">${r.composite.toFixed(0)}</span>
+                        <span class="score-label">kvalitet</span>
+                    </div>
+                    <div class="score-details">
+                        <div class="score-bar">
+                            <span class="score-name">Skärpa</span>
+                            <div class="bar"><div class="bar-fill" style="width:${r.sharpness}%"></div></div>
+                            <span class="score-num">${r.sharpness.toFixed(0)}</span>
+                        </div>
+                        <div class="score-bar">
+                            <span class="score-name">Exponering</span>
+                            <div class="bar"><div class="bar-fill exposure" style="width:${r.exposure}%"></div></div>
+                            <span class="score-num">${r.exposure.toFixed(0)}</span>
+                        </div>
+                        <div class="score-bar">
+                            <span class="score-name">Kontrast</span>
+                            <div class="bar"><div class="bar-fill contrast" style="width:${r.contrast}%"></div></div>
+                            <span class="score-num">${r.contrast.toFixed(0)}</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="/download/${safeName}/${r.filename}" class="download-btn" download>
+                    ⬇ Ladda ner PNG
+                </a>
+            </div>
+        `).join('');
+        }
+
+        // ─── Sorterknappar ──────────────────────────────────────
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (currentResults) renderResults(currentResults, btn.dataset.sort);
+            });
+        });
+
+        // ─── Ny analys ──────────────────────────────────────────
+        document.getElementById('new-analysis-btn').addEventListener('click', () => {
+            resultsSection.classList.add('hidden');
+            settingsSection.scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
+</body>
+
+</html>

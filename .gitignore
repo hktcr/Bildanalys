@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+sharp_frames/
+.DS_Store
