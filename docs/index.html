@@ -916,14 +916,21 @@
         }
 
         function captureFullRes(video, time) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 video.currentTime = time;
                 video.addEventListener('seeked', function onSeeked() {
                     video.removeEventListener('seeked', onSeeked);
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     ctx.drawImage(video, 0, 0);
-                    resolve(canvas.toDataURL('image/png'));
+                    // Använd toBlob istället för toDataURL — undviker "Invalid string length" på 4K-video
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            resolve(URL.createObjectURL(blob));
+                        } else {
+                            reject(new Error('Kunde inte skapa bild.'));
+                        }
+                    }, 'image/png');
                 }, { once: true });
             });
         }
@@ -1128,9 +1135,9 @@
         }
 
         // ─── Nedladdning ────────────────────────────────────────────
-        function downloadImage(dataUrl, filename) {
+        function downloadImage(blobUrl, filename) {
             const a = document.createElement('a');
-            a.href = dataUrl;
+            a.href = blobUrl;
             a.download = filename;
             a.click();
         }
