@@ -936,7 +936,7 @@
             const endTime = parseFloat(document.getElementById('end-range').value);
             const topN = parseInt(document.getElementById('top-n').value);
             const minGap = parseFloat(document.getElementById('min-gap').value);
-            const sampleInterval = parseFloat(document.getElementById('sample-interval').value);
+            let sampleInterval = parseFloat(document.getElementById('sample-interval').value);
 
             const btn = document.getElementById('analyze-btn');
             btn.disabled = true;
@@ -951,106 +951,149 @@
             progressBar.style.width = '0%';
             progressSection.scrollIntoView({ behavior: 'smooth' });
 
-            // Generera tidsstämplar att sampla
-            const times = [];
-            for (let t = startTime; t <= endTime; t += sampleInterval) {
-                times.push(t);
-            }
+            try {
+                // Auto-justera sampling för långa videor
+                const spanSeconds = endTime - startTime;
+                const maxCandidates = 600; // Max antal bildrutor att analysera
+                if (spanSeconds / sampleInterval > maxCandidates) {
+                    const oldInterval = sampleInterval;
+                    sampleInterval = spanSeconds / maxCandidates;
+                    console.log(`[SharpFrame] Auto-justerad sampling: ${oldInterval}s → ${sampleInterval.toFixed(1)}s (${Math.ceil(spanSeconds / sampleInterval)} kandidater för ${Math.round(spanSeconds)}s video)`);
+                }
 
-            progressMsg.textContent = `Analyserar ${times.length} bildrutor...`;
+                // Generera tidsstämplar att sampla
+                const times = [];
+                for (let t = startTime; t <= endTime; t += sampleInterval) {
+                    times.push(t);
+                }
 
-            // Skapa en separat video-element för analys
-            const analysisVideo = document.createElement('video');
-            analysisVideo.src = videoUrl;
-            analysisVideo.muted = true;
-            analysisVideo.preload = 'auto';
-            await new Promise(r => { analysisVideo.addEventListener('loadeddata', r, { once: true }); analysisVideo.load(); });
+                console.log(`[SharpFrame] Startar analys: ${times.length} bildrutor, interval ${sampleInterval.toFixed(1)}s, span ${fmt(startTime)}–${fmt(endTime)}`);
+                progressMsg.textContent = `Analyserar ${times.length} bildrutor (var ${sampleInterval.toFixed(1)}s)...`;
 
-            // Steg 1: Beräkna scores
-            const scored = [];
-            for (let i = 0; i < times.length; i++) {
-                const t = times[i];
-                const imageData = await seekAndCapture(analysisVideo, t);
-
-                const sharpnessRaw = computeSharpness(imageData);
-                const exposure = computeExposure(imageData);
-                const contrast = computeContrast(imageData);
-
-                scored.push({ time: t, sharpnessRaw, exposure, contrast });
-
-                const pct = ((i + 1) / times.length * 80).toFixed(0);
-                progressBar.style.width = pct + '%';
-                progressMsg.textContent = `Analyserar bildruta ${i + 1}/${times.length} (${fmt(t)})`;
-
-                // Ge browser tid att uppdatera UI
-                if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
-            }
-
-            // Steg 2: Normalisera
-            progressMsg.textContent = 'Beräknar composite scores...';
-            progressBar.style.width = '85%';
-
-            const sharpVals = scored.map(s => s.sharpnessRaw);
-            const contrastVals = scored.map(s => s.contrast);
-            const sMin = Math.min(...sharpVals), sMax = Math.max(...sharpVals);
-            const cMin = Math.min(...contrastVals), cMax = Math.max(...contrastVals);
-            const sRange = sMax > sMin ? sMax - sMin : 1;
-            const cRange = cMax > cMin ? cMax - cMin : 1;
-
-            for (const s of scored) {
-                s.sharpness = ((s.sharpnessRaw - sMin) / sRange) * 100;
-                s.contrastNorm = ((s.contrast - cMin) / cRange) * 100;
-                s.composite = 0.5 * s.sharpness + 0.25 * s.exposure + 0.25 * s.contrastNorm;
-            }
-
-            // Steg 3: Sortera och välj topp-N med min-gap
-            scored.sort((a, b) => b.composite - a.composite);
-            const selected = [];
-            for (const candidate of scored) {
-                if (selected.length >= topN) break;
-                const tooClose = selected.some(s => Math.abs(candidate.time - s.time) < minGap);
-                if (!tooClose) selected.push(candidate);
-            }
-
-            // Steg 4: Generera fullupplösta bilder
-            progressMsg.textContent = 'Genererar bilder...';
-            progressBar.style.width = '90%';
-
-            selected.sort((a, b) => a.time - b.time);
-            const results = [];
-            for (let i = 0; i < selected.length; i++) {
-                const s = selected[i];
-                const dataUrl = await captureFullRes(analysisVideo, s.time);
-                results.push({
-                    rank: i + 1,
-                    time: s.time,
-                    timeStr: fmtFile(s.time),
-                    composite: Math.round(s.composite),
-                    sharpness: Math.round(s.sharpness),
-                    exposure: Math.round(s.exposure),
-                    contrast: Math.round(s.contrastNorm),
-                    dataUrl: dataUrl,
-                    filename: `${videoFile.name.replace(/\.[^.]+$/, '')}_${fmtFile(s.time)}_q${Math.round(s.composite)}.png`
+                // Skapa en separat video-element för analys
+                const analysisVideo = document.createElement('video');
+                analysisVideo.src = videoUrl;
+                analysisVideo.muted = true;
+                analysisVideo.preload = 'auto';
+                await new Promise((resolve, reject) => {
+                    analysisVideo.addEventListener('loadeddata', resolve, { once: true });
+                    analysisVideo.addEventListener('error', () => reject(new Error('Kunde inte ladda videon för analys.')), { once: true });
+                    analysisVideo.load();
                 });
 
-                const pct = 90 + ((i + 1) / selected.length * 10);
-                progressBar.style.width = pct.toFixed(0) + '%';
+                // Steg 1: Beräkna scores
+                const scored = [];
+                let seekFailures = 0;
+                for (let i = 0; i < times.length; i++) {
+                    const t = times[i];
+                    try {
+                        const imageData = await seekAndCapture(analysisVideo, t);
+                        const sharpnessRaw = computeSharpness(imageData);
+                        const exposure = computeExposure(imageData);
+                        const contrast = computeContrast(imageData);
+                        scored.push({ time: t, sharpnessRaw, exposure, contrast });
+                    } catch (seekErr) {
+                        seekFailures++;
+                        console.warn(`[SharpFrame] Seek misslyckades vid ${fmt(t)}:`, seekErr);
+                    }
+
+                    const pct = ((i + 1) / times.length * 80).toFixed(0);
+                    progressBar.style.width = pct + '%';
+                    progressMsg.textContent = `Analyserar bildruta ${i + 1}/${times.length} (${fmt(t)})`;
+
+                    // Ge browser tid att uppdatera UI
+                    if (i % 3 === 0) await new Promise(r => setTimeout(r, 0));
+                }
+
+                console.log(`[SharpFrame] Analys klar: ${scored.length} lyckade, ${seekFailures} misslyckade seeks`);
+
+                if (scored.length === 0) {
+                    progressMsg.textContent = '⚠️ Inga bildrutor kunde analyseras. Videon kanske inte stöds av webbläsaren.';
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Steg 2: Normalisera
+                progressMsg.textContent = 'Beräknar composite scores...';
+                progressBar.style.width = '85%';
+
+                const sharpVals = scored.map(s => s.sharpnessRaw);
+                const contrastVals = scored.map(s => s.contrast);
+                const sMin = Math.min(...sharpVals), sMax = Math.max(...sharpVals);
+                const cMin = Math.min(...contrastVals), cMax = Math.max(...contrastVals);
+                const sRange = sMax > sMin ? sMax - sMin : 1;
+                const cRange = cMax > cMin ? cMax - cMin : 1;
+
+                for (const s of scored) {
+                    s.sharpness = ((s.sharpnessRaw - sMin) / sRange) * 100;
+                    s.contrastNorm = ((s.contrast - cMin) / cRange) * 100;
+                    s.composite = 0.5 * s.sharpness + 0.25 * s.exposure + 0.25 * s.contrastNorm;
+                }
+
+                // Steg 3: Sortera och välj topp-N med min-gap
+                scored.sort((a, b) => b.composite - a.composite);
+                const selected = [];
+                for (const candidate of scored) {
+                    if (selected.length >= topN) break;
+                    const tooClose = selected.some(s => Math.abs(candidate.time - s.time) < minGap);
+                    if (!tooClose) selected.push(candidate);
+                }
+
+                console.log(`[SharpFrame] Valde ${selected.length} bilder av ${scored.length} kandidater`);
+
+                if (selected.length === 0) {
+                    progressMsg.textContent = '⚠️ Inga bilder valdes. Prova att minska "Min. avstånd".';
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Steg 4: Generera fullupplösta bilder
+                progressMsg.textContent = `Genererar ${selected.length} bilder i full upplösning...`;
+                progressBar.style.width = '90%';
+
+                selected.sort((a, b) => a.time - b.time);
+                const results = [];
+                for (let i = 0; i < selected.length; i++) {
+                    const s = selected[i];
+                    const dataUrl = await captureFullRes(analysisVideo, s.time);
+                    results.push({
+                        rank: i + 1,
+                        time: s.time,
+                        timeStr: fmtFile(s.time),
+                        composite: Math.round(s.composite),
+                        sharpness: Math.round(s.sharpness),
+                        exposure: Math.round(s.exposure),
+                        contrast: Math.round(s.contrastNorm),
+                        dataUrl: dataUrl,
+                        filename: `${videoFile.name.replace(/\.[^.]+$/, '')}_${fmtFile(s.time)}_q${Math.round(s.composite)}.png`
+                    });
+
+                    const pct = 90 + ((i + 1) / selected.length * 10);
+                    progressBar.style.width = pct.toFixed(0) + '%';
+                    progressMsg.textContent = `Genererar bild ${i + 1}/${selected.length}...`;
+                    await new Promise(r => setTimeout(r, 0));
+                }
+
+                analysisVideo.remove();
+
+                // Visa resultat
+                progressBar.style.width = '100%';
+                progressMsg.textContent = 'Klart!';
+                currentResults = results;
+                console.log(`[SharpFrame] ✓ Klart! ${results.length} bilder genererade`);
+
+                document.getElementById('results-summary').innerHTML =
+                    `<p>Analyserade <strong>${times.length}</strong> bildrutor (var ${sampleInterval.toFixed(1)}s), valde <strong>${results.length}</strong> bilder.</p>`;
+
+                renderResults(results, 'composite');
+                progressSection.classList.add('hidden');
+                resultsSection.classList.remove('hidden');
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                console.error('[SharpFrame] Analysfel:', err);
+                progressMsg.textContent = '❌ Fel: ' + err.message;
             }
-
-            analysisVideo.remove();
-
-            // Visa resultat
-            progressBar.style.width = '100%';
-            progressMsg.textContent = 'Klart!';
-            currentResults = results;
-
-            document.getElementById('results-summary').innerHTML =
-                `<p>Analyserade <strong>${times.length}</strong> bildrutor, valde <strong>${results.length}</strong> bilder.</p>`;
-
-            renderResults(results, 'composite');
-            progressSection.classList.add('hidden');
-            resultsSection.classList.remove('hidden');
-            resultsSection.scrollIntoView({ behavior: 'smooth' });
             btn.disabled = false;
         }
 
