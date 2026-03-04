@@ -633,6 +633,72 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
+        /* ─── Lightbox ─── */
+        .lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(8px);
+            cursor: zoom-out;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .lightbox.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox img {
+            max-width: 95vw;
+            max-height: 92vh;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6);
+        }
+
+        .lightbox-info {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1.2rem;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: inherit;
+            transition: color var(--transition);
+        }
+
+        .lightbox-close:hover {
+            color: white;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -749,6 +815,12 @@
         </section>
 
         <footer class="footer">SharpFrame — GAIA-Tools 🌲</footer>
+    </div>
+
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()">×</button>
+        <img id="lightbox-img" src="" alt="Full storlek">
+        <div id="lightbox-info" class="lightbox-info"></div>
     </div>
 
     <canvas id="analysis-canvas"></canvas>
@@ -1114,7 +1186,7 @@
 
             document.getElementById('results-grid').innerHTML = sorted.map(r => `
             <div class="result-card">
-                <div class="result-thumb">
+                <div class="result-thumb" onclick="openLightbox('${r.dataUrl}', '${r.timeStr}', ${r.composite})" style="cursor:zoom-in">
                     <img src="${r.dataUrl}" alt="Frame ${r.rank}" loading="lazy">
                     <div class="result-time">${fmt(r.time)}</div>
                 </div>
@@ -1141,6 +1213,22 @@
             a.download = filename;
             a.click();
         }
+
+        // ─── Lightbox ───────────────────────────────────────────────
+        function openLightbox(src, timeStr, score) {
+            const lb = document.getElementById('lightbox');
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox-info').textContent = `${timeStr} — kvalitet ${score}`;
+            lb.classList.add('active');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+        });
 
         // ─── Sorterknappar ──────────────────────────────────────────
         document.querySelectorAll('.sort-btn').forEach(btn => {
