@@ -1,0 +1,24 @@
+name: V3 checks
+
+on:
+  push:
+    branches:
+      - feature/selection-room-v3
+  pull_request:
+    paths:
+      - 'docs/v3/**'
+      - 'tests/check_v3.py'
+      - '.github/workflows/v3-check.yml'
+
+jobs:
+  verify-v3:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: node --check docs/v3/app.js
+      - name: Deterministic v3 structure checks
+        run: python3 tests/check_v3.py
