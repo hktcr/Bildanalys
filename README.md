@@ -1,61 +1,33 @@
-# SharpFrame
+# Bildanalys
 
-**Extrahera de skarpaste bildrutorna ur en videofil — med visuellt webbgränssnitt.**
+Webbaserat verktyg för lokal analys av stillbilder direkt i webbläsaren.
 
-SharpFrame analyserar din video och identifierar automatiskt de bästa stillbilderna baserat på tre kvalitetsdimensioner: skärpa, exponering och kontrast. Nyckelbilder (I-frames) prioriteras för maximal dataintegritet.
+## Funktioner
 
----
+- Histogram för luminans och RGB
+- Analys av hela bilden
+- Rektangulärt urval
+- Frihandsurval
+- Histogram för endast markerat område
+- Jämförelse mellan hela bildens histogram och markerat område
+- Medelluminans, median och standardavvikelse
+- RGB-medelvärden
+- Skugg- och högdagerclipping
+- P1, P50 och P99 för luminans
+- Pixelprov med RGB-värden
+- Visuell clipping-markering
+- Filinformation och dimensioner
+- Lokal bearbetning i webbläsaren
+- RAW-filer försöks lokalt via LibRaw WebAssembly
 
-## Snabbstart
+Den publika statiska appen ligger i `docs/index.html` och är avsedd att publiceras med GitHub Pages.
 
-```bash
-cd GAIA-Tools/SharpFrame
-python3 app.py
-```
+## Vetenskaplig tolkning
 
-Webbgränssnittet öppnas automatiskt i din webbläsare på `http://localhost:5555`.
+Histogram och luminansvärden för vanliga bildformat beräknas från den dekodade sRGB-bilden. Luminansapproximationen använder Rec.709-koefficienterna 0,2126 R + 0,7152 G + 0,0722 B. Detta ska inte tolkas som linjär sensorluminans.
 
----
+RAW-filer demosaiceras innan samma visningsanalys görs. Verktyget skiljer därför uttryckligen mellan analys av den framkallade visningsbilden och analys av odemosaicerade sensordata.
 
-## Användning
+## Integritet
 
-1. **Dra in eller välj en videofil** → videons metadata visas
-2. **Ställ in tidsintervall** med start/slut-reglagen
-3. **Klicka "Analysera"** → progressbar → resultatgalleri
-4. **Ladda ner** enskilda bilder som fullupplösta PNG-filer
-
----
-
-## Hur algoritmen fungerar
-
-### Steg 1: Kandidatidentifiering
-FFprobe identifierar alla nyckelbilder (I-frames) i videon. Dessa har per definition maximal dataintegritet i videoströmmen — de är inte rekonstruerade från differensdata.
-
-### Steg 2: Composite scoring
-Varje kandidat värderas på tre dimensioner:
-
-| Dimension | Vikt | Metod |
-|-----------|------|-------|
-| **Skärpa** | 50% | Laplacian-variance (Var(∇²f)) — hög varians = skarpa kanter |
-| **Exponering** | 25% | Histogram-centrering — straffar under/överexponering |
-| **Kontrast** | 25% | Luminans-standardavvikelse — högt värde = bra dynamiskt omfång |
-
-### Steg 3: Selektion
-- Bildrutor sorteras efter composite score
-- `min-gap` förhindrar nära-identiska bilder från samma moment
-- Duplikatfilter (normaliserad korrelation) fångar visuellt identiska bilder
-- Topp-N sparas som förlustfria PNG-filer
-
----
-
-## Beroenden
-
-```bash
-pip3 install opencv-python flask
-```
-
-Kräver även `ffprobe` (ingår i FFmpeg, installeras via `brew install ffmpeg`).
-
----
-
-*SharpFrame — Ett GAIA-Tools-projekt 🌲*
+Bilder analyseras lokalt i webbläsaren. Verktyget har ingen uppladdningsserver för bildfiler.
