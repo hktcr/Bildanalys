@@ -43,3 +43,4 @@ for(const el of [clipMode,clipThreshold,clipOpacity,clipBackground])el.addEventL
 for(const el of [clipMode,clipThreshold,clipBackground])el.addEventListener('change',draw);
 new MutationObserver(()=>{if(active)requestAnimationFrame(draw)}).observe(imageCanvas,{attributes:true,attributeFilter:['width','height']});
 renderLegend();updateHelp();
+import('./output-risk.js');
