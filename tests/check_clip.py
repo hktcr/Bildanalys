@@ -18,7 +18,7 @@ check('Kanalblandningar definieras',all(x in js for x in ['1:[255,55,55]','3:[25
 check('Separata high och low masker finns','hiMask' in js and 'loMask' in js)
 check('Strikt tröskel är 0 och 255',"{lo:0,hi:255" in js)
 check('Nära tröskel är 1 och 254',"{lo:1,hi:254" in js)
-check('RAW begränsning förklaras','bevisar inte sensorclipping' in html.lower() and 'bevisar inte sensorclipping' in js.lower())
+check('RAW begränsning förklaras','bevisar inte att kamerans raw-sensorvärde' in html.lower() and 'bevisar inte sensorclipping' in js.lower())
 check('Overlay har eget lager','#clipCanvas' in css and "clipCanvas.id='clipCanvas'" in js)
 check('Inga typografiska tankstreck',all(ch not in html+js+css for ch in '–—'))
 failed=[n for n,ok in checks if not ok]
