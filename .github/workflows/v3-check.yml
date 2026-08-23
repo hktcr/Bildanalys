@@ -9,6 +9,7 @@ on:
       - 'docs/v3/**'
       - 'tests/check_v3.py'
       - 'tests/check_clip.py'
+      - 'tests/check_output_risk.py'
       - '.github/workflows/v3-check.yml'
 
 jobs:
@@ -23,7 +24,10 @@ jobs:
         run: |
           node --check docs/v3/app.js
           node --check docs/v3/clip-analyzer.js
+          node --check docs/v3/output-risk.js
       - name: Deterministic v3 structure checks
         run: python3 tests/check_v3.py
       - name: Clipping diagnostics checks
         run: python3 tests/check_clip.py
+      - name: Output risk checks
+        run: python3 tests/check_output_risk.py
