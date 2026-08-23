@@ -6,7 +6,7 @@ clip=(root/'docs/v3/clip-analyzer.js').read_text(encoding='utf-8')
 checks=[]
 def check(name,ok): checks.append((name,bool(ok)))
 check('Utmatningsrisk laddas','import(\'./output-risk.js\')' in clip)
-check('Utmatningsrisk knapp finns','Utmatningsrisk' in js and "data.mode='outputrisk'" in js)
+check('Utmatningsrisk knapp finns','Utmatningsrisk' in js and "btn.dataset.mode='outputrisk'" in js)
 check('Skärm sRGB mål finns','Skärm, sRGB' in js)
 check('Egna trösklar finns','Egna trösklar' in js and 'outputShadow' in js and 'outputHighlight' in js)
 check('Klusterfilter finns','outputClusterMin' in js and 'clusters(' in js)
