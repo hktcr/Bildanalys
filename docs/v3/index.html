@@ -7,6 +7,7 @@
 <title>Bildanalys v3</title>
 <meta name="description" content="Lokalt urval, jämförelse och vetenskapligt försiktig bildanalys för stora bildserier.">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="clip-analyzer.css">
 </head>
 <body>
 <main class="app">
@@ -69,12 +70,24 @@
         <button class="btn" data-mode="lasso">Frihand</button>
         <button class="btn" data-mode="sample">Pixelprov</button>
         <button class="btn" data-mode="zones">Zonkarta</button>
-        <button class="btn" data-mode="clipmap">Clippingkarta</button>
+        <button class="btn" data-mode="clipmap">Clipping</button>
         <button class="btn" data-mode="detailmap">Lokal detaljsignal</button>
         <button class="btn" id="saveRegionBtn" disabled>Spara område</button>
         <button class="btn" id="clearSelectionBtn">Rensa markering</button>
       </div>
       <div class="viewer"><div id="analysisEmpty" class="empty">Välj Analys på en bild i gridet.</div><div id="canvasBox" class="canvasBox" hidden><canvas id="imageCanvas"></canvas><canvas id="overlayCanvas"></canvas></div></div>
+      <div id="clipPanel" class="clipPanel" aria-live="polite">
+        <h3>Clippingdiagnos</h3>
+        <div class="clipControls">
+          <label>Visning <select id="clipMode"><option value="quick">Snabbkontroll</option><option value="high">Högdagrar per kanal</option><option value="shadow">Skuggor per kanal</option><option value="full">Alla tre kanaler</option></select></label>
+          <label>Tröskel <select id="clipThreshold"><option value="strict">Exakt 0 / 255</option><option value="near">Nära gräns ≤1 / ≥254</option></select></label>
+          <label>Överlagring <input id="clipOpacity" type="range" min="0.3" max="1" step="0.05" value="0.75"></label>
+        </div>
+        <p id="clipHelp" class="modeHelp"></p>
+        <div id="clipLegend" class="clipLegend"></div>
+        <div id="clipSummary" class="clipSummary"></div>
+        <p class="clipNote"><strong>Exakt 0 / 255</strong> betyder att pixeln ligger på ändpunkten i den avkodade 8-bitars sRGB-representation som visas här. Det är säkert för just denna representation, men bevisar inte att kamerans RAW-sensorvärde var klippt. Läget nära gräns är en varningszon och ska inte kallas strikt clipping.</p>
+      </div>
       <p class="small" id="analysisHint">Full analys använder originalets pixeldata. Kartor visas på visningsrastret.</p>
     </section>
     <aside class="panel metricsPanel">
@@ -92,5 +105,6 @@
 <div id="lightbox" class="lightbox" aria-hidden="true"><div class="lbTop"><button id="lbClose" class="darkBtn">Stäng</button><div id="lbName" class="lbName"></div><label><input id="lbFilename" type="checkbox" checked> Filnamn</label></div><div id="lbStage" class="lbStage"><button id="lbPrev" class="nav prev">‹</button><img id="lbImage" alt=""><button id="lbNext" class="nav next">›</button></div><div class="lbBottom"><button class="darkBtn" id="lbKeep">Behåll</button><button class="darkBtn" id="lbReject">Välj bort</button><button class="darkBtn" id="lbCompare">Jämför</button><button class="darkBtn" id="lbAnalyze">Analysera</button></div></div>
 <div id="lightroomModal" class="modal"><div class="modalCard"><div class="metricHead"><h2>Lightroom</h2><button class="btn" id="lightroomClose">Stäng</button></div><div class="modalGrid"><section class="callout"><h3>Fungerar direkt</h3><p>Exportera flera bilder från Lightroom Mobile och välj dem tillsammans här. Original, DNG och JPG kan användas beroende på vad du vill analysera.</p><label class="btn primary" for="file">Välj exporterade bilder</label></section><section class="callout"><h3>Direkt molnanslutning</h3><p>V3 har ett separat källager för Lightroom Cloud. Adobeanslutningen aktiveras först när en registrerad OAuth-integration och rätt Lightroom-behörigheter finns.</p><button class="btn" disabled>Adobe-inloggning ej konfigurerad</button></section></div></div></div>
 <script type="module" src="app.js"></script>
+<script type="module" src="clip-analyzer.js"></script>
 </body>
 </html>
