@@ -18,6 +18,11 @@ Webbaserat verktyg för lokal analys av stillbilder direkt i webbläsaren.
 - Visuell clipping markering
 - Filinformation, dimensioner och dekoderinformation
 - Explicit sRGB analyscanvas efter webbläsarens profilhantering
+- Lightroomliknande färgfördelning för röd, orange, gul, grön, aqua, blå, lila och magenta
+- Färgandelar för hela bilden eller valt område
+- Heuristiska förslag på komplementär, angränsande och triadisk bearbetning
+- Lokal neutralisering av valda färgkanaler i en reversibel förhandsvisning
+- Flerbildsurval med klickbara miniatyrer
 - Lokal bearbetning i webbläsaren
 - RAW filer försöks lokalt via LibRaw WebAssembly
 - Inbyggd deterministisk självtestsvit för histogrammotorn
@@ -41,3 +46,14 @@ Den inbyggda testsviten använder samma ackumulator och normalisering som den ri
 ## Integritet
 
 Bilder analyseras lokalt i webbläsaren. Verktyget har ingen uppladdningsserver för bildfiler.
+
+## Färghjulsanalys
+
+Färghjulsdelen använder den avkodade sRGB representationen. Varje pixel fördelas mellan de två närmaste av åtta Lightroomliknande kulörcentra. Bidraget viktas med mättnad och ljushet för att mycket mörka, mycket ljusa och svagt mättade pixlar inte ska beskrivas som tydliga kulörer. Resterande massa redovisas separat som neutral.
+
+De åtta kanalandelarna normaliseras till 100 procent av bildens uppskattade kulörinnehåll. Det gör dem användbara för jämförelse vid redigering, men de är inte en fysikalisk mätning av färgat objektområde eller pigmentmängd.
+
+Harmoniförslagen är heuristiska. De jämför bildens dominerande kanal med komplementära, angränsande och triadiska kanalgrupper. Förslaget är ett redigeringsstöd, inte ett estetiskt facit.
+
+När en färgkanal stängs av görs pixlar närmast den kanalen neutrala med bevarad Y prime. Originalfilen ändras aldrig.
+
