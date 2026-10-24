@@ -6,7 +6,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 p=argparse.ArgumentParser();p.add_argument('--fixture',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
 short=a.output/'short-80ms.mp4';invalid=a.output/'invalid.mp4';invalid.write_bytes(b'not a video')
-subprocess.run(['ffmpeg','-v','error','-y','-i',str(a.fixture),'-t','.08','-an','-r','25','-c:v','libx264',str(short)],check=True)
+subprocess.run(['ffmpeg','-v','error','-y','-i',str(a.fixture),'-t','0.08','-an','-r','25','-c:v','libx264',str(short)],check=True)
 repo=Path(__file__).resolve().parents[2]
 server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(http.server.SimpleHTTPRequestHandler,directory=str(repo/'docs')));threading.Thread(target=server.serve_forever,daemon=True).start()
 result={'status':'RUNNING','scope':'Actual Chromium desktop and Swedish mobile emulation; fractional-media-metadata simulation plus real MP4 files, not physical Android','profiles':[]}
