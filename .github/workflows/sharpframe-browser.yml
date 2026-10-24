@@ -37,6 +37,8 @@ jobs:
         run: node tests/sharpframe/movie-real-video.js /tmp/sharpframe-real-video
       - name: Exercise actual Chromium WebCodecs export and decoded frame IDs
         run: python tests/sharpframe/movie-browser-test.py --fixture /tmp/sharpframe-real-video/source-with-audio.mp4 --output /tmp/sharpframe-browser
+      - name: Diagnose range and Swedish locale handling
+        run: python tests/sharpframe/range-browser-test.py --fixture /tmp/sharpframe-real-video/source-with-audio.mp4 --output /tmp/sharpframe-browser
       - name: Print browser result
         if: always()
         run: cat /tmp/sharpframe-browser/results.json || true
