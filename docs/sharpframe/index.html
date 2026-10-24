@@ -327,7 +327,7 @@
             font-weight: 500;
         }
 
-        .setting input[type="number"] {
+        .setting input {
             padding: 0.5rem 0.75rem;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border);
@@ -338,7 +338,7 @@
             outline: none;
         }
 
-        .setting input[type="number"]:focus {
+        .setting input:focus {
             border-color: var(--accent);
         }
 
@@ -793,19 +793,19 @@
                         <span id="end-time-display" class="time-display">0:00</span>
                     </div>
                 </div>
-                <div class="range-actions"><button id="set-start" type="button" class="secondary-btn">Start här</button><button id="set-end" type="button" class="secondary-btn">Slut här</button></div>
+                <div class="range-actions"><button id="set-start" type="button" class="secondary-btn">Start här</button><button id="set-end" type="button" class="secondary-btn">Slut här</button><button id="reset-range" type="button" class="secondary-btn">Hela filmen</button></div>
                 <div class="settings-row"><div class="setting"><label for="ranking-mode">Prioritera</label><select id="ranking-mode"><option value="detail">Brusdämpad detaljsignal</option><option value="sharpness">Rå skärpesignal (äldre)</option><option value="composite">Kombinationsmått (äldre)</option></select></div>
                     <div class="setting">
                         <label for="top-n">Antal bilder</label>
-                        <input type="number" id="top-n" value="10" min="1" max="50">
+                        <input type="text" inputmode="numeric" id="top-n" value="10" autocomplete="off" aria-label="Antal bilder">
                     </div>
                     <div class="setting">
                         <label for="min-gap">Min. avstånd (sek)</label>
-                        <input type="number" id="min-gap" value="1.0" min="0" max="30" step="0.1">
+                        <input type="text" inputmode="decimal" id="min-gap" value="1,0" autocomplete="off" aria-label="Min. avstånd i sekunder">
                     </div>
                     <div class="setting">
                         <label for="sample-interval">Sampla var (sek)</label>
-                        <input type="number" id="sample-interval" value="0.5" min="0.1" max="5" step="0.1">
+                        <input type="text" inputmode="decimal" id="sample-interval" value="0,5" autocomplete="off" aria-label="Sampla var, i sekunder">
                     </div>
                 </div>
             </div>
@@ -898,6 +898,6 @@
     <script src="webm.js"></script>
     <script src="movie-export.js"></script>
     <script src="movie.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=20261024-range"></script>
 </body>
 </html>
