@@ -1,0 +1,50 @@
+name: SharpFrame real browser QA
+on:
+  pull_request:
+    paths:
+      - 'docs/sharpframe/**'
+      - 'tests/sharpframe/**'
+      - '.github/workflows/sharpframe-browser.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/sharpframe/**'
+      - 'tests/sharpframe/**'
+      - '.github/workflows/sharpframe-browser.yml'
+permissions:
+  contents: read
+jobs:
+  chromium-video-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser and real-codec test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Create fixture and verify native codec adapter
+        run: node tests/sharpframe/movie-real-video.js /tmp/sharpframe-real-video
+      - name: Exercise actual Chromium WebCodecs export and decoded frame IDs
+        run: python tests/sharpframe/movie-browser-test.py --fixture /tmp/sharpframe-real-video/source-with-audio.mp4 --output /tmp/sharpframe-browser
+      - name: Print browser result
+        if: always()
+        run: cat /tmp/sharpframe-browser/results.json || true
+      - name: Save synthetic browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sharpframe-chromium-evidence
+          path: /tmp/sharpframe-browser/
+          if-no-files-found: warn
+          retention-days: 7

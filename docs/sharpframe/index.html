@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SharpFrame — Skärpeanalys</title>
-    <meta name="description" content="Extrahera de skarpaste bildrutorna ur din video — direkt i webbläsaren.">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>SharpFrame - Skärpeanalys</title>
+    <meta name="description" content="Hitta stillbildskandidater med tydlig detalj ur din video, lokalt i webbläsaren.">
+    
     <style>
         :root {
             --bg-primary: #0a0e17;
@@ -16,7 +16,7 @@
             --border-glow: rgba(99, 179, 237, 0.3);
             --text-primary: #f1f5f9;
             --text-secondary: #94a3b8;
-            --text-muted: #64748b;
+            --text-muted: #a0aec0;
             --accent: #63b3ed;
             --accent-glow: rgba(99, 179, 237, 0.15);
             --green: #48bb78;
@@ -484,7 +484,7 @@
         .result-thumb img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         .result-time {
@@ -699,7 +699,37 @@
                 opacity: 1;
             }
         }
+        /* Accessible controls and uncropped, bounded previews. */
+        button, select, input { font: inherit; }
+        button, select { min-height: 44px; }
+        :focus-visible { outline: 3px solid #f6e05e !important; outline-offset: 4px; }
+        select { width: 100%; background: #172338; color: var(--text-primary); border: 1px solid #94a3b8; border-radius: 6px; padding: .5rem; }
+        .settings-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+        .setting { min-width: 0; flex: 1 1 160px; }
+        .setting input { width: 100%; min-width: 0; }
+        .primary-btn { background: #2455a4; color: #fff; }
+        .primary-btn:hover { background: #1f4b93; }
+        .info-value, .result-scores, .results-summary { overflow-wrap: anywhere; }
+        .result-thumb { display: block; width: 100%; border: 0; cursor: zoom-in; }
+        .result-scores { padding: .75rem; font-size: .85rem; }
+        .help { color: var(--text-secondary); text-align: left; font-size: .9rem; margin: 1rem 0; }
+        .help p { margin: .75rem 0; }
+        summary { cursor: pointer; padding: .5rem 0; }
+        .option { display: flex; align-items: center; gap: .6rem; margin: .65rem 0; font-size: .9rem; }
+        .option input { width: 20px; height: 20px; flex-shrink: 0; }
+        .range-actions, .lightbox-navigation { display: flex; gap: .75rem; flex-wrap: wrap; }
+        .results-actions { flex-wrap: wrap; }
+        .time-display { min-width: 7rem; }
+        .lightbox { margin: auto; border: 1px solid #94a3b8; color: var(--text-primary); width: 96vw; height: 96vh; max-width: none; max-height: none; padding: 3.5rem 1rem 1rem; cursor: default; }
+        .lightbox[open] { display: flex; flex-direction: column; gap: .65rem; align-items: center; justify-content: center; }
+        .lightbox::backdrop { background: rgba(0,0,0,.8); }
+        .lightbox img { flex: 1 1 0; min-height: 0; width: 100%; height: 0; max-width: 100%; max-height: none; }
+        .lightbox-navigation { position: static; flex: 0 0 auto; justify-content: center; }
+        .lightbox-info { position: static; flex: 0 0 auto; transform: none; width: 100%; text-align: center; padding: .25rem; overflow-wrap: anywhere; }
+        @media (max-width: 480px) { .app { padding: 1rem .75rem; } .card { padding: 1rem; } .range-row { flex-wrap: wrap; } .settings-row { flex-direction: column; } .setting { width: 100%; min-width: 0; } .sort-controls { flex-wrap: wrap; } }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
     </style>
+    <link rel="stylesheet" href="movie.css">
 </head>
 
 <body>
@@ -709,7 +739,8 @@
                 <span class="logo-icon">◈</span>
                 <h1>SharpFrame</h1>
             </div>
-            <p class="subtitle">Hitta skarpa kandidater ur din video — lokalt i webbläsaren</p><p>Förhandsversion. Urvalet bygger på stickprov och detaljsignal, inte en garanti för bästa fokus. Videon laddas inte upp.</p>
+            <p class="subtitle">Hitta den skarpa bilden. Låt filmen stanna där.</p><p>Välj skarpa ögonblick, ge dem tid och skapa en ny film. Allt sker på din enhet.</p>
+            <details class="help"><summary>Så fungerar urvalet och dess begränsningar</summary><p>Analysen mäter detaljsignal i stickprov, inte motivets fokus eller bildens värde. Brus, ljus och en skarp bakgrund kan påverka. Brusdämpningen används bara för poängen; dina PNG-bilder filtreras inte. Poäng 0–100 är relativa inom samma analys, inte procent bildkvalitet.</p><p>Söktider är inte verifierade frame-ID:n. Tätare sökning granskar bara områden nära lovande stickprov. Likhetsfiltret kan dölja små motivskillnader och är därför avstängt från början. PNG bevarar webbläsarens avkodade bildstorlek, inte originalets komprimerade data, HDR eller RAW. Codec-stöd beror på webbläsaren.</p><p>Analysen begränsas till 1280 × 720 px och högst 680 sökningar. Exportgräns: 36 megapixel per bild och 256 MiB sparade PNG-filer, gamla och nya tillsammans. En bild under export kan tillkomma. Detta är inte ett tak för webbläsarens totala minne.</p></details>
         </header>
 
         <!-- Steg 1: Ladda video -->
@@ -723,21 +754,19 @@
                     <div class="drop-icon">🎬</div>
                     <p>Dra och släpp en videofil här</p>
                     <span class="drop-divider">eller</span>
-                    <label class="file-btn">
-                        Välj fil
-                        <input type="file" id="file-input" accept="video/*,.mp4,.mov,.mkv,.avi,.m4v,.webm" hidden>
-                    </label>
+                    <button type="button" id="choose-file" class="file-btn">Välj videofil</button>
+                    <input type="file" id="file-input" accept="video/*,.mp4,.mov,.mkv,.avi,.m4v,.webm" hidden>
                 </div>
             </div>
-            <div id="upload-error" class="upload-error hidden"></div>
+            <div id="upload-error" class="upload-error hidden" role="alert" tabindex="-1"></div>
             <div id="video-info" class="video-info hidden">
                 <div class="info-grid">
                     <div class="info-item"><span class="info-label">Fil</span><span id="info-filename"
-                            class="info-value">—</span></div>
+                            class="info-value">-</span></div>
                     <div class="info-item"><span class="info-label">Upplösning</span><span id="info-resolution"
-                            class="info-value">—</span></div>
+                            class="info-value">-</span></div>
                     <div class="info-item"><span class="info-label">Längd</span><span id="info-duration"
-                            class="info-value">—</span></div>
+                            class="info-value">-</span></div>
                 </div>
             </div>
         </section>
@@ -754,24 +783,25 @@
             <div class="timeline-controls">
                 <div class="range-group">
                     <div class="range-row">
-                        <label>Start</label>
-                        <input type="range" id="start-range" min="0" max="100" value="0" step="0.1">
+                        <label for="start-range">Start</label>
+                        <input type="range" id="start-range" min="0" max="100" value="0" step="any">
                         <span id="start-time-display" class="time-display">0:00</span>
                     </div>
                     <div class="range-row">
-                        <label>Slut</label>
-                        <input type="range" id="end-range" min="0" max="100" value="100" step="0.1">
+                        <label for="end-range">Slut</label>
+                        <input type="range" id="end-range" min="0" max="100" value="100" step="any">
                         <span id="end-time-display" class="time-display">0:00</span>
                     </div>
                 </div>
-                <div class="settings-row"><div class="setting"><label for="ranking-mode">Prioritera</label><select id="ranking-mode"><option value="sharpness">Skärpesignal</option><option value="composite">Tidigare kombinationsmått</option></select></div>
+                <div class="range-actions"><button id="set-start" type="button" class="secondary-btn">Start här</button><button id="set-end" type="button" class="secondary-btn">Slut här</button></div>
+                <div class="settings-row"><div class="setting"><label for="ranking-mode">Prioritera</label><select id="ranking-mode"><option value="detail">Brusdämpad detaljsignal</option><option value="sharpness">Rå skärpesignal (äldre)</option><option value="composite">Kombinationsmått (äldre)</option></select></div>
                     <div class="setting">
                         <label for="top-n">Antal bilder</label>
                         <input type="number" id="top-n" value="10" min="1" max="50">
                     </div>
                     <div class="setting">
                         <label for="min-gap">Min. avstånd (sek)</label>
-                        <input type="number" id="min-gap" value="1.0" min="0.1" max="30" step="0.1">
+                        <input type="number" id="min-gap" value="1.0" min="0" max="30" step="0.1">
                     </div>
                     <div class="setting">
                         <label for="sample-interval">Sampla var (sek)</label>
@@ -779,6 +809,9 @@
                     </div>
                 </div>
             </div>
+            <label class="option"><input type="checkbox" id="refine" checked> Sök tätare nära kandidater</label>
+            <label class="option"><input type="checkbox" id="dedupe"> Dölj mycket lika kandidater (kan dölja små motivskillnader)</label>
+            <p id="analysis-plan" class="help" aria-live="polite"></p>
             <button id="analyze-btn" class="primary-btn">
                 <span class="btn-icon">🔍</span> Analysera
             </button>
@@ -787,8 +820,8 @@
         <!-- Progress -->
         <section id="progress-section" class="card hidden">
             <div class="card-header">
-                <span class="step-badge pulse">⏳</span>
-                <h2>Analyserar...</h2>
+                <span id="progress-badge" class="step-badge">⏳</span>
+                <h2 id="progress-heading">Analyserar…</h2>
             </div>
             <div class="progress-bar-container">
                 <div id="progress-bar" class="progress-bar" style="width:0%"></div>
@@ -800,327 +833,71 @@
         <section id="results-section" class="card hidden">
             <div class="card-header">
                 <span class="step-badge done">✓</span>
-                <h2>Resultat</h2>
+                <h2 id="results-heading" tabindex="-1">Resultat</h2>
             </div>
             <div id="results-summary" class="results-summary"></div>
+            <p class="help">Sortera kandidaterna. Poängen nedan följer valt mått; kronologisk ordning visar urvalsmåttet.</p>
             <div class="sort-controls">
-                <button class="sort-btn active" data-sort="composite">Kombinationsmått</button>
-                <button class="sort-btn" data-sort="time">Kronologisk</button>
-                <button class="sort-btn" data-sort="sharpness">Skärpa</button>
+                <button class="sort-btn active" data-sort="detail" aria-pressed="true">Brusdämpad signal</button>
+                <button class="sort-btn" data-sort="composite" aria-pressed="false">Äldre kombination</button>
+                <button class="sort-btn" aria-pressed="false" data-sort="time">Kronologisk</button>
+                <button class="sort-btn" aria-pressed="false" data-sort="sharpness">Rå skärpesignal</button>
             </div>
             <div id="results-grid" class="results-grid"></div>
             <div class="results-actions">
                 <button id="new-analysis-btn" class="secondary-btn">Ny analys</button>
+                <button id="clear-results" class="secondary-btn">Rensa resultat</button>
             </div>
         </section>
 
-        <footer class="footer">SharpFrame — GAIA-Tools 🌲</footer>
+
+        <section id="movie-section" class="card hidden" aria-labelledby="movie-heading">
+            <div class="card-header"><span class="step-badge">3</span><h2 id="movie-heading" tabindex="-1">Bygg din film</h2></div>
+            <p class="help">Välj ”Lägg till filmstopp” på en skarp kandidat, eller pausa originalfilmen på önskad bild och lägg till den här. Du kan ändra varje stopp.</p>
+            <div class="movie-actions"><button id="movie-add-current" class="secondary-btn">Lägg till bilden vid spelhuvudet</button><button id="movie-clear-stops" class="secondary-btn">Ta bort alla stopp</button></div>
+            <p id="movie-empty" class="help">Inga stopp ännu. Lägg till ett första ögonblick.</p>
+            <ol id="movie-stops" class="movie-list" aria-label="Filmstopp"></ol>
+            <div class="settings-row movie-options">
+                <div class="setting"><label for="movie-rate">Tempo mellan stoppen</label><select id="movie-rate"><option value="0.5">Halv fart (0,5×)</option><option value="0.75">Lugnare (0,75×)</option><option value="1" selected>Normal fart (1×)</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="2">Dubbel fart (2×)</option></select></div>
+                <div class="setting"><label for="movie-size">Längsta bildsida</label><select id="movie-size"><option value="640">640 px · snabbare test</option><option value="1280" selected>1280 px</option><option value="1920">1920 px</option></select></div>
+                <div class="setting"><label for="movie-fps">Bilder per sekund</label><select id="movie-fps"><option value="25">25</option><option value="30">30</option></select></div>
+            </div>
+            <p class="help">Stopptiden avser originalfilmen. Bromsning, stillbild och uppstart anges i sekunder i den nya filmen. När stopp ligger nära varandra kortas övergångarna automatiskt, aldrig stillbilderna.</p>
+            <p id="movie-summary" class="movie-status" aria-live="polite"></p>
+            <p id="movie-warning" class="movie-notice hidden"></p>
+            <div id="movie-track" class="movie-track" aria-label="Den nya filmens tidslinje"></div>
+            <div class="movie-legend"><span>Rörelse</span><span class="ramp">Bromsning / uppstart</span><span class="hold">Stillbild</span></div>
+            <h3>Förhandsvisa</h3>
+            <canvas id="movie-preview" class="movie-preview" width="640" height="360" aria-label="Förhandsvisning av redigerad film"></canvas>
+            <div class="movie-controls"><button id="movie-play" class="secondary-btn">Spela</button><label for="movie-scrub">Tid</label><input id="movie-scrub" type="range" min="0" max="1" value="0" step="any"><output id="movie-clock" for="movie-scrub">0:00.000</output></div>
+            <p class="help">Förhandsvisningen kan hoppa över bilder på långsamma enheter. Exporten skapar varje bildruta med bestämd tid och rätt längd.</p>
+            <p class="movie-notice">Den nya filmen sparas som WebM (VP8), utan ljud i denna version. Originalfilen och dess ljud ändras inte. MP4-export ingår inte.</p>
+            <label id="movie-direct-option" class="option hidden"><input id="movie-direct" type="checkbox">Spara direkt till fil (lämpligt för långa filmer)</label>
+            <p id="movie-support" class="help"></p>
+            <div class="movie-actions"><button id="movie-export" class="primary-btn">Skapa ny film · utan ljud</button><button id="movie-cancel" class="secondary-btn" disabled>Avbryt export</button></div>
+            <progress id="movie-progress" value="0" max="1" class="hidden" style="width:100%" aria-label="Filmexport"></progress>
+            <p id="movie-status" role="status" class="movie-status" aria-live="polite"></p>
+            <div id="movie-result" class="movie-result hidden"><h3>Din färdiga film</h3><p id="movie-receipt"></p><video id="movie-output" controls playsinline></video><div class="movie-actions"><a id="movie-download" class="secondary-btn">Ladda ner filmen</a><button id="movie-clear-output" class="secondary-btn">Rensa färdig film</button></div></div>
+        </section>
+
+        <footer class="footer">SharpFrame - GAIA-Tools 🌲</footer>
     </div>
 
-    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
-        <button class="lightbox-close" onclick="closeLightbox()">×</button>
-        <img id="lightbox-img" src="" alt="Full storlek">
-        <div id="lightbox-info" class="lightbox-info"></div>
-    </div>
+    <dialog id="lightbox" class="lightbox" aria-label="Bildgranskning" aria-describedby="lightbox-info">
+        <button type="button" class="lightbox-close" id="lightbox-close" aria-label="Stäng bildgranskning" autofocus>×</button>
+        <img id="lightbox-img" alt="Kandidat">
+        <button type="button" id="lightbox-add-stop" class="secondary-btn">Lägg till filmstopp</button>
+        <div class="lightbox-navigation"><button type="button" class="secondary-btn" id="lightbox-prev">Föregående</button><button type="button" class="secondary-btn" id="lightbox-next">Nästa</button></div>
+        <p id="lightbox-info" class="lightbox-info" aria-live="polite"></p>
+    </dialog>
 
     <canvas id="analysis-canvas"></canvas>
 
-    <script>
-        // ─── State ──────────────────────────────────────────────────
-        let videoFile = null;
-        let videoUrl = null;
-        let videoDuration = 0;
-        let currentResults = null;
-        let activeRun = null;
-        let loadController = null;
-
-        const videoPlayer = document.getElementById('video-player');
-        const canvas = document.getElementById('analysis-canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-        // ─── Tidsformatering ────────────────────────────────────────
-        function fmt(seconds) {
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = Math.floor(seconds % 60);
-            if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-            return `${m}:${String(s).padStart(2, '0')}`;
-        }
-        function fmtFile(seconds) {
-            const ms = Math.round(seconds * 1000);
-            return `${Math.floor(ms / 60000)}m${String(Math.floor(ms / 1000) % 60).padStart(2,'0')}s${String(ms % 1000).padStart(3,'0')}`;
-        }
-        function clearResults() {
-            closeLightbox();
-            document.getElementById('lightbox-img').removeAttribute('src');
-            for (const r of currentResults || []) URL.revokeObjectURL(r.dataUrl);
-            currentResults = null;
-            document.getElementById('results-grid').replaceChildren();
-            document.getElementById('results-section').classList.add('hidden');
-        }
-        function waitMedia(video, event, signal, start, timeout = 15000) {
-            return new Promise((resolve, reject) => {
-                let timer;
-                const cleanup = () => { clearTimeout(timer); video.removeEventListener(event, ok); video.removeEventListener('error', fail); signal?.removeEventListener('abort', abort); };
-                const finish = (error) => { cleanup(); error ? reject(error) : resolve(); };
-                const ok = () => finish();
-                const fail = () => finish(new Error('Videon kunde inte avkodas. Prova ett format som webbläsaren stöder.'));
-                const abort = () => finish(new DOMException('Avbruten', 'AbortError'));
-                if (signal?.aborted) return abort();
-                video.addEventListener(event, ok, {once:true});
-                video.addEventListener('error', fail, {once:true});
-                signal?.addEventListener('abort', abort, {once:true});
-                timer = setTimeout(() => finish(new Error('Videoläsningen tog för lång tid.')), timeout);
-                try { start(); } catch(error) { finish(error); }
-            });
-        }
-        function samplingTimes(start, end, interval, limit = 600) {
-            if (![start,end,interval,limit].every(Number.isFinite) || start < 0 || end <= start || interval <= 0 || limit < 1) throw new Error('Ogiltigt tidsintervall.');
-            const count = Math.min(Math.floor(limit), Math.max(1, Math.ceil((end - start) / interval)));
-            const step = Math.max(interval, (end - start) / count);
-            return Array.from({length: count}, (_,i) => start + i * step).filter(t => t < end);
-        }
-        // ─── Drag & Drop ────────────────────────────────────────────
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const videoExts = ['.mp4', '.mov', '.mkv', '.avi', '.m4v', '.webm', '.mts', '.mpg', '.mpeg'];
-
-        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-        dropZone.addEventListener('drop', e => {
-            e.preventDefault(); dropZone.classList.remove('dragover');
-            const file = e.dataTransfer.files[0];
-            if (!file) return;
-            const ext = '.' + file.name.split('.').pop().toLowerCase();
-            if (file.type.startsWith('video/') || videoExts.includes(ext)) {
-                loadVideo(file);
-            } else {
-                showError(`Filtypen "${ext}" stöds inte.`);
-            }
-        });
-        fileInput.addEventListener('change', e => { if (e.target.files[0]) loadVideo(e.target.files[0]); });
-
-        function showError(msg) {
-            const el = document.getElementById('upload-error');
-            el.textContent = '⚠️ ' + msg;
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 5000);
-        }
-
-        // ─── Ladda video ────────────────────────────────────────────
-        async function loadVideo(file) {
-            if (activeRun) { showError('Avbryt analysen innan du byter video.'); return; }
-            loadController?.abort();
-            const controller = new AbortController(); loadController = controller;
-            clearResults();
-            videoFile = null; videoDuration = 0;
-            document.getElementById('settings-section').classList.add('hidden');
-            document.getElementById('video-info').classList.add('hidden');
-            document.getElementById('progress-section').classList.add('hidden');
-            if (videoUrl) URL.revokeObjectURL(videoUrl);
-            videoUrl = URL.createObjectURL(file);
-            try {
-                await waitMedia(videoPlayer, 'loadeddata', controller.signal, () => { videoPlayer.src = videoUrl; videoPlayer.load(); });
-                if (controller.signal.aborted) return;
-                if (!Number.isFinite(videoPlayer.duration) || videoPlayer.duration <= 0 || videoPlayer.videoWidth < 3 || videoPlayer.videoHeight < 3) throw new Error('Videon saknar användbar längd eller bildstorlek.');
-                videoFile = file; videoDuration = videoPlayer.duration;
-                document.getElementById('info-filename').textContent = file.name;
-                document.getElementById('info-resolution').textContent = `${videoPlayer.videoWidth}×${videoPlayer.videoHeight}`;
-                document.getElementById('info-duration').textContent = fmt(videoDuration);
-                document.getElementById('video-info').classList.remove('hidden');
-                const sr = document.getElementById('start-range'), er = document.getElementById('end-range');
-                sr.max = videoDuration; sr.value = 0; er.max = videoDuration; er.value = videoDuration;
-                document.getElementById('start-time-display').textContent = fmt(0);
-                document.getElementById('end-time-display').textContent = fmt(videoDuration);
-                sr.oninput = () => { sr.value = Math.max(0, Math.min(+sr.value,+er.value-0.001)); document.getElementById('start-time-display').textContent=fmt(+sr.value); videoPlayer.currentTime=+sr.value; };
-                er.oninput = () => { er.value = Math.min(videoDuration, Math.max(+er.value,+sr.value+0.001)); document.getElementById('end-time-display').textContent=fmt(+er.value); videoPlayer.currentTime=Math.min(+er.value,videoDuration-0.001); };
-                document.getElementById('settings-section').classList.remove('hidden');
-            } catch(error) { if(error.name !== 'AbortError') showError(error.message); }
-        }
-        // ─── Bildanalys (Canvas) ────────────────────────────────────
-        function computeSharpness(imageData) {
-            const d = imageData.data, w = imageData.width, h = imageData.height;
-            // Konvertera till gråskala och beräkna Laplacian variance
-            const gray = new Float64Array(w * h);
-            for (let i = 0; i < w * h; i++) {
-                const idx = i * 4;
-                gray[i] = 0.299 * d[idx] + 0.587 * d[idx + 1] + 0.114 * d[idx + 2];
-            }
-            // Laplacian: ∇²f = f(x-1,y) + f(x+1,y) + f(x,y-1) + f(x,y+1) - 4·f(x,y)
-            let sum = 0, sumSq = 0, count = 0;
-            for (let y = 1; y < h - 1; y++) {
-                for (let x = 1; x < w - 1; x++) {
-                    const idx = y * w + x;
-                    const lap = gray[idx - 1] + gray[idx + 1] + gray[idx - w] + gray[idx + w] - 4 * gray[idx];
-                    sum += lap;
-                    sumSq += lap * lap;
-                    count++;
-                }
-            }
-            const mean = sum / count;
-            return count ? Math.max(0, (sumSq / count) - (mean * mean)) : 0; // variance
-        }
-
-        function computeExposure(imageData) {
-            const d = imageData.data;
-            let sum = 0;
-            const pixels = d.length / 4;
-            for (let i = 0; i < d.length; i += 4) {
-                sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-            }
-            const mean = sum / pixels;
-            return (1 - Math.abs(mean - 128) / 128) * 100;
-        }
-
-        function computeContrast(imageData) {
-            const d = imageData.data;
-            let sum = 0, sumSq = 0;
-            const pixels = d.length / 4;
-            for (let i = 0; i < d.length; i += 4) {
-                const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-                sum += lum;
-                sumSq += lum * lum;
-            }
-            const mean = sum / pixels;
-            return Math.sqrt(Math.max(0, sumSq / pixels - mean * mean));
-        }
-
-        // ─── Fånga bildruta ─────────────────────────────────────────
-        async function seekVideo(video, time, signal) {
-            if(signal?.aborted) throw new DOMException('Avbruten','AbortError');
-            if (!video.seeking && video.readyState >= 2 && Math.abs(video.currentTime-time) < 0.000001) return;
-            await waitMedia(video, 'seeked', signal, () => { video.currentTime = time; });
-            if(video.readyState < 2) await waitMedia(video, 'loadeddata', signal, () => {});
-        }
-        async function seekAndCapture(video, time, signal) {
-            await seekVideo(video,time,signal);
-            const scale = Math.min(1,720/video.videoHeight);
-            canvas.width=Math.max(3,Math.round(video.videoWidth*scale));
-            canvas.height=Math.max(3,Math.round(video.videoHeight*scale));
-            ctx.drawImage(video,0,0,canvas.width,canvas.height);
-            return ctx.getImageData(0,0,canvas.width,canvas.height);
-        }
-        async function captureFullRes(video,time,signal) {
-            await seekVideo(video,time,signal);
-            canvas.width=video.videoWidth; canvas.height=video.videoHeight;
-            ctx.drawImage(video,0,0);
-            const blob = await new Promise((resolve,reject) => {
-                let settled=false;
-                const finish=(error,value) => {if(settled)return;settled=true;clearTimeout(timer);signal?.removeEventListener('abort',abort);error?reject(error):resolve(value);};
-                const abort=()=>finish(new DOMException('Avbruten','AbortError'));
-                const timer=setTimeout(()=>finish(new Error('PNG-exporten tog för lång tid.')),30000);
-                signal?.addEventListener('abort',abort,{once:true});
-                if(signal?.aborted)return abort();
-                try {canvas.toBlob(blob=>finish(blob?null:new Error('Kunde inte skapa PNG.'),blob),'image/png');}catch(error){finish(error);}
-            });
-            if(signal?.aborted)throw new DOMException('Avbruten','AbortError');
-            return URL.createObjectURL(blob);
-        }
-        document.getElementById('analyze-btn').addEventListener('click', runAnalysis);
-        document.getElementById('cancel-btn').addEventListener('click', () => activeRun?.abort());
-        async function runAnalysis() {
-            if(activeRun || !videoFile) return;
-            const start=+document.getElementById('start-range').value, end=+document.getElementById('end-range').value;
-            const topN=+document.getElementById('top-n').value, gap=+document.getElementById('min-gap').value, interval=+document.getElementById('sample-interval').value;
-            if(![start,end,topN,gap,interval].every(Number.isFinite) || !Number.isInteger(topN) || topN<1 || topN>50 || gap<0 || gap>30 || interval<0.1 || interval>5 || start<0 || end>videoDuration || start>=end) {showError('Kontrollera tidsintervall, antal (1–50), avstånd (0–30) och sampling (0,1–5 sekunder).');return;}
-            const controller=new AbortController(); activeRun=controller;
-            const signal=controller.signal, sourceFile=videoFile, sourceUrl=videoUrl;
-            const mode=document.getElementById('ranking-mode').value;
-            const video=document.createElement('video'); video.muted=true; video.preload='auto'; video.playsInline=true;
-            const btn=document.getElementById('analyze-btn'), progress=document.getElementById('progress-section'), bar=document.getElementById('progress-bar'), msg=document.getElementById('progress-message');
-            const results=[]; let committed=false;
-            btn.disabled=true; fileInput.disabled=true;
-            document.querySelectorAll('#settings-section input, #settings-section select').forEach(el=>el.disabled=true);
-            clearResults(); progress.classList.remove('hidden'); bar.style.width='0%';msg.textContent='Läser video…';
-            try {
-                const times=samplingTimes(start,end,interval);
-                await waitMedia(video,'loadeddata',signal,()=>{video.src=sourceUrl;video.load();});
-                const scored=[];let failed=0;
-                for(let i=0;i<times.length;i++) {
-                    try {const image=await seekAndCapture(video,times[i],signal);scored.push({time:times[i],sharpnessRaw:computeSharpness(image),exposure:computeExposure(image),contrast:computeContrast(image)});}
-                    catch(error){if(error.name==='AbortError')throw error;failed++;}
-                    bar.style.width=`${80*(i+1)/times.length}%`;msg.textContent=`Analyserar ${i+1}/${times.length}`;
-                    await new Promise(r=>setTimeout(r,0));
-                }
-                if(!scored.length)throw new Error('Inga bildrutor kunde analyseras.');
-                const values=scored.map(x=>x.sharpnessRaw), contrasts=scored.map(x=>x.contrast);
-                const lo=Math.min(...values),hi=Math.max(...values),clo=Math.min(...contrasts),chi=Math.max(...contrasts);
-                for(const x of scored){x.sharpness=hi>lo?100*(x.sharpnessRaw-lo)/(hi-lo):0;x.contrastNorm=chi>clo?100*(x.contrast-clo)/(chi-clo):0;x.composite=.5*x.sharpness+.25*x.exposure+.25*x.contrastNorm;}
-                scored.sort((a,b)=>(mode==='sharpness'?b.sharpnessRaw-a.sharpnessRaw:b.composite-a.composite)||a.time-b.time);
-                const selected=[];
-                for(const x of scored){if(selected.length>=topN)break;if(!selected.some(y=>Math.abs(y.time-x.time)<gap))selected.push(x);}
-                for(let i=0;i<selected.length;i++) {
-                    const x=selected[i],url=await captureFullRes(video,x.time,signal);
-                    results.push({rank:i+1,time:x.time,timeStr:fmtFile(x.time),composite:Math.round(x.composite),sharpness:Math.round(x.sharpness),exposure:Math.round(x.exposure),contrast:Math.round(x.contrastNorm),dataUrl:url,filename:`${sourceFile.name.replace(/\.[^.]+$/,'')}_${fmtFile(x.time)}_${i+1}.png`});
-                    bar.style.width=`${80+20*(i+1)/selected.length}%`;msg.textContent=`Skapar PNG ${i+1}/${selected.length}`;
-                    await new Promise(r=>setTimeout(r,0));
-                }
-                if(signal.aborted)throw new DOMException('Avbruten','AbortError');
-                currentResults=results;committed=true;
-                document.getElementById('results-summary').textContent=`${scored.length} av ${times.length} stickprov analyserade, ${failed} misslyckade. ${results.length} bilder valda efter ${mode==='sharpness'?'skärpesignal':'kombinationsmått'}. Analys sker i högst 720 px höjd; PNG i originalets avkodade upplösning. Poäng är relativa inom klippet. Brus, motiv och ljus kan påverka. Tidsstämplar är söktider, inte verifierade frame-ID. Ingen HDR/RAW-garanti.`;
-                renderResults(results,mode);progress.classList.add('hidden');document.getElementById('results-section').classList.remove('hidden');
-                document.querySelectorAll('.sort-btn').forEach(el=>el.classList.toggle('active',el.dataset.sort===mode));
-            } catch(error){msg.textContent=error.name==='AbortError'?'Analysen avbröts. Inga ofullständiga resultat sparades.':`Fel: ${error.message}`;}
-            finally {
-                if(!committed)for(const r of results)URL.revokeObjectURL(r.dataUrl);
-                video.pause();video.removeAttribute('src');video.load();video.remove();canvas.width=1;canvas.height=1;
-                activeRun=null;btn.disabled=false;fileInput.disabled=false;
-                document.querySelectorAll('#settings-section input, #settings-section select').forEach(el=>el.disabled=false);
-            }
-        }
-        // ─── Rendera resultat ───────────────────────────────────────
-        function renderResults(results,sortBy) {
-            const sorted=[...results].sort((a,b)=>sortBy==='time'?a.time-b.time:sortBy==='sharpness'?b.sharpness-a.sharpness:b.composite-a.composite);
-            const grid=document.getElementById('results-grid');grid.replaceChildren();
-            for(const r of sorted){
-                const card=document.createElement('div');card.className='result-card';
-                const thumb=document.createElement('button');thumb.className='result-thumb';thumb.type='button';thumb.setAttribute('aria-label',`Visa bild ${r.rank}, ${r.timeStr}`);
-                const img=document.createElement('img');img.src=r.dataUrl;img.alt=`Bild ${r.rank}`;img.loading='lazy';thumb.append(img);thumb.addEventListener('click',()=>openLightbox(r.dataUrl,r.timeStr,r.composite));
-                const info=document.createElement('p');info.className='result-scores';info.textContent=`${r.timeStr} · Skärpesignal ${r.sharpness} · Kombination ${r.composite}`;
-                const download=document.createElement('button');download.className='download-btn';download.textContent='⬇ Ladda ner PNG';download.addEventListener('click',()=>downloadImage(r.dataUrl,r.filename));
-                card.append(thumb,info,download);grid.append(card);
-            }
-        }
-        // ─── Nedladdning ────────────────────────────────────────────
-        function downloadImage(blobUrl, filename) {
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = filename;
-            a.click();
-        }
-
-        // ─── Lightbox ───────────────────────────────────────────────
-        function openLightbox(src, timeStr, score) {
-            const lb = document.getElementById('lightbox');
-            document.getElementById('lightbox-img').src = src;
-            document.getElementById('lightbox-info').textContent = `${timeStr} — kombinationsmått ${score}`;
-            lb.classList.add('active');
-        }
-
-        function closeLightbox() {
-            document.getElementById('lightbox').classList.remove('active');
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeLightbox();
-        });
-
-        // ─── Sorterknappar ──────────────────────────────────────────
-        document.querySelectorAll('.sort-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                if (currentResults) renderResults(currentResults, btn.dataset.sort);
-            });
-        });
-
-        window.addEventListener('pagehide',(event)=>{activeRun?.abort();loadController?.abort();if(event.persisted)return;clearResults();if(videoUrl)URL.revokeObjectURL(videoUrl);});
-        // ─── Ny analys ──────────────────────────────────────────────
-        document.getElementById('new-analysis-btn').addEventListener('click', () => {
-            document.getElementById('results-section').classList.add('hidden');
-            document.getElementById('settings-section').scrollIntoView({ behavior: 'smooth' });
-        });
-    </script>
+    <script src="core.js"></script>
+    <script src="timeline.js"></script>
+    <script src="webm.js"></script>
+    <script src="movie-export.js"></script>
+    <script src="movie.js"></script>
+    <script src="app.js"></script>
 </body>
-
 </html>
