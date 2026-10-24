@@ -1,5 +1,5 @@
 """Real Chromium smoke test, to be run only in a browser-enabled environment.
-Not run in the package's build environment. Requires Playwright and FFmpeg.
+Runs in the supported GitHub Actions browser environment. Requires Playwright and FFmpeg.
 Uses the fixture created by movie-real-video.js, not personal footage.
 """
 import argparse
@@ -78,6 +78,10 @@ try:
                 mismatches.append((index, actual, wanted))
         assert not mismatches, {"count": len(mismatches), "first": mismatches[:20]}
         result['checks'].append('actual WebCodecs export: all 280 decoded frame IDs including both freeze holds; 11.2 seconds, VP8 without audio')
+        page.locator('#movie-output').evaluate('(video) => video.play()')
+        page.wait_for_function("document.getElementById('movie-output').currentTime > .2")
+        page.locator('#movie-output').evaluate('(video) => video.pause()')
+        result['checks'].append('exported WebM plays in the actual browser video element')
         old_src = page.locator('#movie-output').get_attribute('src')
         page.locator('#movie-export').click()
         page.locator('#movie-cancel').click()

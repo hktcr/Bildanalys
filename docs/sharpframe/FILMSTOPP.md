@@ -1,6 +1,6 @@
 # SharpFrame: filmstopp
 
-Version byggd 24 oktober 2026. Publiceringskandidat med separat Chromium-grind före uppdatering av webbversionen.
+Version byggd 24 oktober 2026. Webbläsarflödet är verifierat med syntetisk film i Chromium; avgränsningar finns nedan.
 
 ## Vad du kan göra
 
@@ -45,7 +45,7 @@ Behåll alla filer i `docs/sharpframe/` tillsammans. Öppna `index.html` i en mo
 - Riktig MP4/H.264 med ljud genererades, avkodades och exporterades genom den nya produktionskoden för tidslinje, renderloop och WebM-paketering. FFmpeg användes som adapter i stället för webbläsarens avkodare/kodare.
 - Tre exporter på 12,2, 13,4 och 13,7 sekunder avkodades igen. Alla 1 118 utmatningsbilder fick rätt syntetiskt bild-ID. Samtliga stillperioder hade rätt bild och längd inom en bildruta. Utdata innehöll avsiktligt ett VP8-videospår utan ljud.
 - Detta bevisar verkliga spelbara videofiler, tidslinjens matematik och WebM-paketering. Det är **inte** bevis för att den faktiska WebCodecs- och HTML-video-vägen fungerar i en målwebbläsare.
-- Riktig Chromium/WebCodecs-körning har nu genomförts på GitHub Actions. En exporterad 11,2-sekundersfilm återavkodades: samtliga 280 bild-ID:n och båda stillperioderna stämde. Förhandsvisning, avbrott, källbyte, frånvaro av externa förfrågningar och 390 px utan horisontell overflow kontrollerades. Den första körningen fångade ett flyttalsfel vid bildrutegränser; söktider normaliseras nu konsekvent till mikrosekunder.
+- Riktig Chromium/WebCodecs-körning har nu genomförts på GitHub Actions. En exporterad 11,2-sekundersfilm återavkodades: samtliga 280 bild-ID:n och båda stillperioderna stämde. Även analyserad kandidat → PNG → filmstopp behöll samma bild-ID. Förhandsvisning, avbrott, källbyte, frånvaro av externa förfrågningar och 390 px utan horisontell overflow kontrollerades. Den första körningen fångade ett flyttalsfel vid bildrutegränser; söktider normaliseras nu konsekvent till mikrosekunder.
 - Safari/iOS-, HEVC-, långfilms-/RAM-, HDR-, VFR- och representativ fågelfilmstestning återstår. Direkt filskrivningens systemdialog är mocktestad, inte automatiserad i den verkliga browserkörningen.
 
 ## Reproducerbara kontroller
@@ -77,4 +77,4 @@ I en miljö där Chromium/Chrome och Playwright får startas:
 
     python3 tests/sharpframe/movie-browser-test.py --fixture /tmp/sharpframe-real-video/source-with-audio.mp4 --output /tmp/sharpframe-browser
 
-Valfritt: `--chromium /sökväg/till/chrome`. Testet gör faktisk filinläsning, två redigerade stopp, förhandsvisning, WebCodecs-export, nedladdning, FFmpeg-avkodning och bild-ID-kontroll av varje ruta, avbrott, källbyte och kontroll av 390 px-bredd. En skärmbild sparas för mänsklig visuell bedömning. Körningsutfallet för varje commit är verifieringsunderlaget, inte att testfilen finns. [Verifierad Chromium-körning](https://github.com/hktcr/Bildanalys/actions/runs/40125316382).
+Valfritt: `--chromium /sökväg/till/chrome`. Testet gör faktisk filinläsning, två redigerade stopp, förhandsvisning, WebCodecs-export, nedladdning, FFmpeg-avkodning och bild-ID-kontroll av varje ruta, avbrott, källbyte och kontroll av 390 px-bredd. En skärmbild sparas för mänsklig visuell bedömning. Körningsutfallet för varje commit är verifieringsunderlaget, inte att testfilen finns. [Verifierad Chromium-körning](https://github.com/hktcr/Bildanalys/actions/runs/40125876796).
