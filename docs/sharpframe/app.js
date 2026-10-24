@@ -66,6 +66,7 @@ for(const id of ['sample-interval','refine'])$(id).addEventListener('input',upda
 $('set-start').addEventListener('click',()=>{$('start-range').value=videoPlayer.currentTime;updatePlan();});
 $('set-end').addEventListener('click',()=>{$('end-range').value=videoPlayer.currentTime;updatePlan();});
 async function seekVideo(video,time,signal){
+    time=Math.max(0,Math.min(Math.round(time*1e6)/1e6,Math.max(0,video.duration-.000001)));
     if(signal?.aborted)throw new DOMException('Avbruten','AbortError');
     if(video.error)throw new Error('Videodekodern har rapporterat ett fel. Prova ett annat videoformat.');
     if(!video.seeking&&video.readyState>=2&&Math.abs(video.currentTime-time)<.000001)return;

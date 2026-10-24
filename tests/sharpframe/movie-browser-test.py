@@ -67,13 +67,16 @@ try:
         pixels = subprocess.check_output(['ffmpeg', '-v', 'error', '-i', str(exported), '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-fps_mode', 'passthrough', 'pipe:1'])
         frame_bytes = 320 * 180 * 3
         assert len(pixels) == 280 * frame_bytes
+        mismatches = []
         for index, wanted in enumerate(expected):
             actual = 0
             for bit in range(6):
                 offset = index * frame_bytes + (25 * 320 + 25 + bit * 48) * 3
                 if sum(pixels[offset:offset+3]) / 3 > 120:
                     actual |= 1 << bit
-            assert actual == wanted, (index, actual, wanted)
+            if actual != wanted:
+                mismatches.append((index, actual, wanted))
+        assert not mismatches, {"count": len(mismatches), "first": mismatches[:20]}
         result['checks'].append('actual WebCodecs export: all 280 decoded frame IDs including both freeze holds; 11.2 seconds, VP8 without audio')
         old_src = page.locator('#movie-output').get_attribute('src')
         page.locator('#movie-export').click()
