@@ -1,6 +1,6 @@
 'use strict';
 const C = SharpFrameCore, $ = id => document.getElementById(id);
-let videoFile=null, videoUrl=null, videoDuration=0, currentResults=null, activeRun=null, loadController=null, lightboxIndex=0, displayedResults=[], currentSort="detail";
+let videoFile=null, videoUrl=null, videoDuration=0, currentResults=null, activeRun=null, loadController=null, lightboxIndex=0, displayedResults=[], currentSort="detail", validationError=false;
 const videoPlayer=$('video-player'),canvas=$('analysis-canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
 const thumbCanvas=document.createElement('canvas'),thumbCtx=thumbCanvas.getContext('2d');
 const fileInput=$('file-input'),dropZone=$('drop-zone');
@@ -8,7 +8,28 @@ const modeLabels={detail:'Brusdämpad detaljsignal',sharpness:'Rå skärpesignal
 function fmt(t){const ms=Math.max(0,Math.round(t*1000)),h=Math.floor(ms/3600000),m=Math.floor(ms/60000)%60,s=Math.floor(ms/1000)%60;return `${h?h+':':''}${h?String(m).padStart(2,'0'):m}:${String(s).padStart(2,'0')}.${String(ms%1000).padStart(3,'0')}`;}
 function fmtFile(t){return fmt(t).replace(/:/g,'m').replace('.','s');}
 function showError(message){$('upload-error').textContent=message;$('upload-error').classList.remove('hidden');$('upload-error').focus();$('upload-error').scrollIntoView({block:'nearest'});}
-function hideError(){$('upload-error').classList.add('hidden');$('upload-error').textContent='';}
+function hideError(){$('upload-error').classList.add('hidden');$('upload-error').textContent='';validationError=false;}
+// Text decimal inputs preserve commas that some mobile number inputs discard.
+function decimalValue(value){const text=String(value).trim();return /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(text)?Number(text.replace(',','.')):NaN;}
+function analysisRange(){
+    // Native range inputs serialize with fewer digits than media.duration.
+    // Only normalize endpoint round-off; never accept a genuinely reversed range.
+    const normalize=value=>{const n=decimalValue(value);if(n>videoDuration&&n-videoDuration<=.000001)return videoDuration;return n;};
+    return {start:normalize($('start-range').value),end:normalize($('end-range').value)};
+}
+function analysisSettings(){
+    const {start,end}=analysisRange(),count=decimalValue($('top-n').value),gap=decimalValue($('min-gap').value),interval=decimalValue($('sample-interval').value),mode=$('ranking-mode').value;
+    if(!Number.isFinite(start)||start<0||start>videoDuration)throw new Error('Starttiden måste ligga inom filmen. Välj Hela filmen för att återställa intervallet.');
+    if(!Number.isFinite(end)||end<0||end>videoDuration)throw new Error('Sluttiden måste ligga inom filmen. Välj Hela filmen för att återställa intervallet.');
+    if(start>=end)throw new Error('Sluttiden måste ligga efter starttiden. Flytta Slut åt höger eller välj Hela filmen.');
+    if(!Number.isInteger(count)||count<1||count>50)throw new Error('Antal bilder måste vara ett heltal mellan 1 och 50.');
+    if(!Number.isFinite(gap)||gap<0||gap>30)throw new Error('Min. avstånd måste vara mellan 0 och 30 sekunder. Du kan skriva exempelvis 0,5.');
+    if(!Number.isFinite(interval)||interval<.1||interval>5)throw new Error('Sampla var måste vara mellan 0,1 och 5 sekunder. Du kan skriva exempelvis 0,5.');
+    if(!Object.hasOwn(modeLabels,mode))throw new Error('Välj ett alternativ under Prioritera.');
+    return {start,end,count,gap,interval,mode};
+}
+function clearValidationError(){if(validationError)hideError();}
+function resetAnalysisRange(){if(!videoFile)return;$('start-range').max=videoDuration;$('start-range').value=0;$('end-range').max=videoDuration;$('end-range').value=videoDuration;clearValidationError();updatePlan();}
 function releaseResults(results){for(const r of results||[]){URL.revokeObjectURL(r.dataUrl);URL.revokeObjectURL(r.thumbUrl);}}
 function clearResults(){closeLightbox();releaseResults(currentResults);currentResults=null;displayedResults=[];$('results-grid').replaceChildren();$('results-section').classList.add('hidden');}
 function waitMedia(video,event,signal,start,timeout=15000){
@@ -25,7 +46,7 @@ function waitMedia(video,event,signal,start,timeout=15000){
     });
 }
 function updatePlan(){
-    const start=+$('start-range').value,end=+$('end-range').value,interval=+$('sample-interval').value;
+    const {start,end}=analysisRange(),interval=decimalValue($('sample-interval').value);
     $('start-time-display').textContent=fmt(start);$('end-time-display').textContent=fmt(end);$('start-range').setAttribute('aria-valuetext',fmt(start));$('end-range').setAttribute('aria-valuetext',fmt(end));
     try{
         const analysisDimensions=C.analysisSize(videoPlayer.videoWidth,videoPlayer.videoHeight);
@@ -49,7 +70,7 @@ async function loadVideo(file){
         videoFile=file;videoDuration=videoPlayer.duration;
         $('info-filename').textContent=file.name;$('info-resolution').textContent=`${videoPlayer.videoWidth} × ${videoPlayer.videoHeight}`;$('info-duration').textContent=fmt(videoDuration);
         $('video-info').classList.remove('hidden');
-        $('start-range').max=videoDuration;$('start-range').value=0;$('end-range').max=videoDuration;$('end-range').value=videoDuration;
+        resetAnalysisRange();
         $('settings-section').classList.remove('hidden');updatePlan();
         window.SharpFrameMovie?.sourceLoaded({file:videoFile,url:videoUrl,duration:videoDuration,width:videoPlayer.videoWidth,height:videoPlayer.videoHeight});
     }catch(error){if(error.name!=='AbortError'){if(loadController===controller){videoPlayer.removeAttribute('src');videoPlayer.load();if(videoUrl)URL.revokeObjectURL(videoUrl);videoUrl=null;}showError(error.message);}}
@@ -60,11 +81,12 @@ dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.a
 dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');const file=e.dataTransfer.files[0];if(file)loadVideo(file);});
 for(const id of ['start-range','end-range'])$(id).addEventListener('input',()=>{
-    updatePlan();const t=+$(id).value;if(Number.isFinite(t))videoPlayer.currentTime=Math.min(t,Math.max(0,videoDuration-.000001));
+    clearValidationError();updatePlan();const t=+$(id).value;if(Number.isFinite(t))videoPlayer.currentTime=Math.min(t,Math.max(0,videoDuration-.000001));
 });
-for(const id of ['sample-interval','refine'])$(id).addEventListener('input',updatePlan);
-$('set-start').addEventListener('click',()=>{$('start-range').value=videoPlayer.currentTime;updatePlan();});
-$('set-end').addEventListener('click',()=>{$('end-range').value=videoPlayer.currentTime;updatePlan();});
+for(const id of ['sample-interval','min-gap','top-n','ranking-mode','refine'])$(id).addEventListener('input',()=>{clearValidationError();updatePlan();});
+$('reset-range').addEventListener('click',resetAnalysisRange);
+$('set-start').addEventListener('click',()=>{$('start-range').value=videoPlayer.currentTime;clearValidationError();updatePlan();});
+$('set-end').addEventListener('click',()=>{$('end-range').value=videoPlayer.currentTime;clearValidationError();updatePlan();});
 async function seekVideo(video,time,signal){
     time=Math.max(0,Math.min(Math.round(time*1e6)/1e6,Math.max(0,video.duration-.000001)));
     if(signal?.aborted)throw new DOMException('Avbruten','AbortError');
@@ -107,8 +129,8 @@ $('analyze-btn').addEventListener('click',runAnalysis);
 $('cancel-btn').addEventListener('click',()=>activeRun?.abort());
 async function runAnalysis(){
     if(activeRun||!videoFile||window.SharpFrameMovie?.busy)return;
-    const start=+$('start-range').value,end=+$('end-range').value,count=+$('top-n').value,gap=+$('min-gap').value,interval=+$('sample-interval').value,mode=$('ranking-mode').value;
-    if(![start,end,count,gap,interval].every(Number.isFinite)||!Number.isInteger(count)||count<1||count>50||gap<0||gap>30||interval<.1||interval>5||start<0||end>videoDuration||start>=end||!Object.hasOwn(modeLabels,mode)){showError('Kontrollera start före slut, antal 1–50, avstånd 0–30 och sampling 0,1–5 sekunder.');return;}
+    let settings;try{settings=analysisSettings();}catch(error){validationError=true;showError(error.message);return;}
+    const {start,end,count,gap,interval,mode}=settings;
     const controller=new AbortController();activeRun=controller;const signal=controller.signal,sourceFile=videoFile,sourceUrl=videoUrl;
     const dedupe=$('dedupe').checked,refine=$('refine').checked,video=document.createElement('video');video.muted=true;video.preload='auto';video.playsInline=true;
     const retainedBytes=(currentResults||[]).reduce((total,r)=>total+(r.pngBytes||0),0);
