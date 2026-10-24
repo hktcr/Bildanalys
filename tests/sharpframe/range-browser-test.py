@@ -21,10 +21,12 @@ try:
    data={'mobile':mobile,'checks':['no error or editable interval before source load'],'initial':page.evaluate('analysisSettings()')}
    assert data['initial']['start']==0 and data['initial']['end']==6 and data['initial']['interval']==.5
    # Real native range serialization reproduced the old false rejection on 6710/20008 values.
-   data['range_rounding']=page.evaluate('''() => {const r=$('end-range'),old={max:r.max,value:r.value,duration:videoDuration};const failures=[];let rawOvershoots=0,seed=1;const values=[.08,.1,.3,1.1,2.4,5.966666666666667,10.233344,120.1234567];for(let i=0;i<20000;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;values.push((seed%100000000)/30000);}for(const duration of values){videoDuration=duration;r.max=String(duration);r.value=String(duration);if(+r.value>duration)rawOvershoots++;try{const settings=analysisSettings();if(settings.end>duration)throw Error('outside duration');}catch(error){failures.push({duration,value:r.value,error:error.message});}}videoDuration=old.duration;r.max=old.max;r.value=old.value;return {checked:values.length,rawOvershoots,count:failures.length,examples:failures.slice(0,12)};}''')
+   data['range_rounding']=page.evaluate('''() => {const r=$('end-range'),old={max:r.max,value:r.value,duration:videoDuration};const failures=[];let rawOvershoots=0,seed=1;const values=[.0000001,.08,.1,.3,1.1,2.4,5.966666666666667,10.233344,120.1234567];for(let i=0;i<20000;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;values.push((seed%100000000)/30000);}for(const duration of values){videoDuration=duration;r.max=String(duration);r.value=String(duration);if(+r.value>duration)rawOvershoots++;try{const settings=analysisSettings();if(settings.end>duration)throw Error('outside duration');}catch(error){failures.push({duration,value:r.value,error:error.message});}}videoDuration=old.duration;r.max=old.max;r.value=old.value;return {checked:values.length,rawOvershoots,count:failures.length,examples:failures.slice(0,12)};}''')
    assert data['range_rounding']['count']==0
    assert data['range_rounding']['rawOvershoots']>0
-   data['checks'].append('20008 native range endpoints accepted without extending the source duration')
+   data['checks'].append('20009 native range endpoints accepted without extending the source duration')
+   page.locator('#start-range').fill('0.0000001');assert page.evaluate('analysisSettings().start')==.0000001;page.locator('#reset-range').click()
+   data['checks'].append('native range exponent serialization retains tiny positive start times')
    page.locator('#set-end').click();page.locator('#analyze-btn').click()
    assert 'Sluttiden måste ligga efter starttiden' in page.locator('#upload-error').inner_text()
    page.locator('#reset-range').click();assert not page.locator('#upload-error').is_visible();assert page.evaluate('analysisSettings().end')==6

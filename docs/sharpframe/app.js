@@ -14,7 +14,8 @@ function decimalValue(value){const text=String(value).trim();return /^(?:\d+(?:[
 function analysisRange(){
     // Native range inputs serialize with fewer digits than media.duration.
     // Only normalize endpoint round-off; never accept a genuinely reversed range.
-    const start=decimalValue($('start-range').value),rawEnd=decimalValue($('end-range').value);
+    const number=value=>String(value).trim()===''?NaN:Number(value); // Native range may use exponent notation.
+    const start=number($('start-range').value),rawEnd=number($('end-range').value);
     const tolerance=Math.abs(videoDuration)*Number.EPSILON*32; // Native range: about 15 significant digits.
     const end=rawEnd>videoDuration&&rawEnd-videoDuration<=tolerance?videoDuration:rawEnd;
     return {start,end};
