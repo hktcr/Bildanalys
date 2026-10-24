@@ -25,7 +25,7 @@ try:
    assert data['range_rounding']['count']==0
    assert data['range_rounding']['rawOvershoots']>0
    data['checks'].append('20009 native range endpoints accepted without extending the source duration')
-   page.locator('#start-range').fill('0.0000001');assert page.evaluate('analysisSettings().start')==.0000001;page.locator('#reset-range').click()
+   page.evaluate('''() => {$('start-range').value='0.0000001';$('start-range').dispatchEvent(new Event('input',{bubbles:true}));}''');assert page.evaluate('analysisSettings().start')==.0000001;page.locator('#reset-range').click()
    data['checks'].append('native range exponent serialization retains tiny positive start times')
    page.locator('#set-end').click();page.locator('#analyze-btn').click()
    assert 'Sluttiden måste ligga efter starttiden' in page.locator('#upload-error').inner_text()
