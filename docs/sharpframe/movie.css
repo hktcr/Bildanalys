@@ -1,0 +1,21 @@
+.movie-actions { display:flex;gap:.65rem;flex-wrap:wrap;margin:1rem 0; }
+.movie-actions .primary-btn {width:auto;flex:1 1 200px;}
+.movie-notice {padding:.8rem 1rem;border-left:3px solid var(--amber);background:rgba(236,201,75,.07);line-height:1.6;}
+.movie-list {list-style:none;margin:1rem 0;padding:0;display:grid;gap:1rem;}
+.movie-stop {border:1px solid var(--border);border-radius:8px;padding:1rem;display:grid;grid-template-columns:112px 1fr;gap:1rem;}
+.movie-stop img {width:112px;max-height:100px;object-fit:contain;align-self:center;background:#000;}
+.movie-stop-fields {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem;}
+.movie-stop-fields .setting {min-width:0;}
+.movie-stop-head {display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.5rem;}
+.movie-stop-head button {padding:.4rem .6rem;}
+.movie-track {display:flex;min-height:38px;overflow:hidden;border:1px solid var(--border);border-radius:7px;margin:1rem 0;}
+.movie-segment {min-width:1px;border:0;border-right:1px solid #111827;color:#fff;background:#2c4b77;overflow:hidden;padding:0;}
+.movie-segment.hold {background:#6d4daa;}.movie-segment.brake,.movie-segment.resume {background:#006c75;}
+.movie-legend {display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;}.movie-legend span::before {content:'●';color:#2c4b77;padding-right:.4rem;}.movie-legend .hold::before{color:#a88cdd}.movie-legend .ramp::before{color:#29a3ad}
+.movie-preview {display:block;max-width:100%;max-height:65vh;width:100%;background:#000;object-fit:contain;}
+.movie-controls {display:flex;gap:.6rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;}.movie-controls input {flex:1;min-width:100px;}
+.movie-status {margin:1rem 0;line-height:1.6;overflow-wrap:anywhere;}
+.movie-candidate {width:100%;border-radius:0;border-width:1px 0 0;padding:.7rem;color:var(--accent);}
+.movie-result video {display:block;width:100%;max-height:65vh;}
+.movie-options {margin-top:1rem;}.movie-options select {width:100%;}
+@media(max-width:600px){.movie-stop {grid-template-columns:1fr}.movie-stop img{width:100%;max-height:130px}.movie-stop-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.movie-actions .secondary-btn{padding:.65rem .8rem}.movie-stop-head{align-items:flex-start}.movie-preview{max-height:55vh}}

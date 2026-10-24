@@ -1,0 +1,47 @@
+name: SharpFrame deterministic checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/sharpframe/**'
+      - 'tests/check_sharpframe.js'
+      - 'tests/sharpframe/**'
+      - '.github/workflows/sharpframe-check.yml'
+  pull_request:
+    paths:
+      - 'docs/sharpframe/**'
+      - 'tests/check_sharpframe.js'
+      - 'tests/sharpframe/**'
+      - '.github/workflows/sharpframe-check.yml'
+permissions:
+  contents: read
+jobs:
+  verify-sharpframe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check docs/sharpframe/core.js
+          node --check docs/sharpframe/app.js
+          node --check docs/sharpframe/timeline.js
+          node --check docs/sharpframe/webm.js
+          node --check docs/sharpframe/movie-export.js
+          node --check docs/sharpframe/movie.js
+      - name: Synthetic algorithms and static interface checks (not browser QA)
+        run: |
+          node tests/check_sharpframe.js
+          node tests/sharpframe/state-checks.js
+          node tests/sharpframe/independent-core-checks.js
+          node tests/sharpframe/movie-tests.js
+          node tests/sharpframe/movie-state-tests.js
+          node tests/sharpframe/movie-independent-tests.cjs
+      - name: Install real-codec integration dependencies
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Real codec adapter integration (not browser QA)
+        run: node tests/sharpframe/movie-real-video.js /tmp/sharpframe-real-video
