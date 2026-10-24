@@ -34,6 +34,8 @@ try:
      page.locator(selector).fill(value);page.locator('#analyze-btn').click();message=page.locator('#upload-error').inner_text();assert label in message and 'start före slut' not in message,(selector,value,message)
     page.locator(selector).fill('1' if selector=='#top-n' else '0.5')
    data['checks'].append('blank, invalid, out-of-bound and fractional-count inputs get the correct field error')
+   page.locator('#top-n').fill('');page.locator('#top-n').press_sequentially('1,5');assert page.locator('#top-n').input_value()=='1,5';page.locator('#analyze-btn').click();assert 'Antal bilder' in page.locator('#upload-error').inner_text();page.locator('#top-n').fill('1')
+   data['checks'].append('typed fractional count 1,5 is rejected rather than silently becoming 15')
    for selector in ['#min-gap','#sample-interval']:
     page.locator(selector).fill('');page.locator(selector).press_sequentially('0,5');assert page.locator(selector).input_value()=='0,5'
    settings=page.evaluate('analysisSettings()');assert settings['gap']==.5 and settings['interval']==.5

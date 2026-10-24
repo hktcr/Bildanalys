@@ -14,8 +14,10 @@ function decimalValue(value){const text=String(value).trim();return /^(?:\d+(?:[
 function analysisRange(){
     // Native range inputs serialize with fewer digits than media.duration.
     // Only normalize endpoint round-off; never accept a genuinely reversed range.
-    const normalize=value=>{const n=decimalValue(value);if(n>videoDuration&&n-videoDuration<=.000001)return videoDuration;return n;};
-    return {start:normalize($('start-range').value),end:normalize($('end-range').value)};
+    const start=decimalValue($('start-range').value),rawEnd=decimalValue($('end-range').value);
+    const tolerance=Math.abs(videoDuration)*Number.EPSILON*32; // Native range: about 15 significant digits.
+    const end=rawEnd>videoDuration&&rawEnd-videoDuration<=tolerance?videoDuration:rawEnd;
+    return {start,end};
 }
 function analysisSettings(){
     const {start,end}=analysisRange(),count=decimalValue($('top-n').value),gap=decimalValue($('min-gap').value),interval=decimalValue($('sample-interval').value),mode=$('ranking-mode').value;
