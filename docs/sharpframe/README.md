@@ -1,10 +1,8 @@
 # SharpFrame: arbetsversion 2026-10-24
 
-**Ny funktion: filmstopp.** Se [FILMSTOPP.md](FILMSTOPP.md) för redigerbar tidslinje, bromsning/stillbild/uppstart och faktisk WebM-export. Den nya filmen är utan ljud i denna första version. Videomotor och filformat har testats med en verklig FFmpeg-adapter; den faktiska webbläsarvägen är fortfarande inte verifierad.
+**Ny funktion: filmstopp.** Se [FILMSTOPP.md](FILMSTOPP.md) för redigerbar tidslinje, bromsning/stillbild/uppstart och faktisk WebM-export. Den nya filmen är utan ljud i denna första version.
 
-Nedan beskrivs den tidigare stillbildsdelens bevarade förbättringar.
-
-Status: **opublicerad arbetsversion**. Automatiska algoritm- och strukturella tester har körts. Riktig videodekodning, användarflöde och visuell kontroll i webbläsare är ännu inte verifierade. Den befintliga webbadressen har inte ändrats.
+Status: algoritm- och tillståndstester samt riktig Chromium/WebCodecs-export av syntetisk H.264-video har verifierats. Bildrutetider, frysta perioder, avbrott, källbyte och 390 px-bredd ingår. Detta är inte en generell attest för Safari/iOS, HEVC/HDR, långa filmer eller fotografisk kvalitet. Tidigare förbättringar i stillbildsdelen är bevarade.
 
 ## Förbättringar
 
@@ -49,7 +47,7 @@ Kör riktig video-QA: filval med tangentbord, kort och normalt klipp, skarpt kon
 
 Publicera först efter godkänd granskning, avhjälpt verifieringslucka och uttryckligt publiceringsmandat. Kontrollera därefter den publicerade revisionen och det befintliga målets URL.
 
-## Förberedd webbläsarregression (ännu inte körd)
+## Separat äldre webbläsarregression
 
 Runnern kräver Python med Pillow, NumPy och Playwright samt FFmpeg och en installerad Chromium. Kör endast i en miljö som tillåter webbläsarstart. Ingen miljöspärr ska kringgås.
 
@@ -60,4 +58,4 @@ Enbart för kontroll av testplan utan webbläsarstart:
 
     python3 tests/sharpframe/browser_test.py docs/sharpframe/index.html --dry-run
 
-Dry-run skriver uttryckligen NOT_RUN och är inte ett testgodkännande. Runnern skapar syntetiskt H.264-material med avläsbara bildnummer och kontrollerar bland annat PNG-innehåll/dimensioner, tangentbordsflöde, sortering, avbrott, ogiltig fil och 80 ms-klipp. Målwebbläsare och representativ egen film måste fortfarande prövas.
+Dry-run skriver uttryckligen NOT_RUN och är inte ett testgodkännande. Den nya filmredigeringsvägen testas separat i movie-browser-test.py och GitHub Actions. Runnern skapar syntetiskt H.264-material med avläsbara bildnummer och kontrollerar bland annat PNG-innehåll/dimensioner, tangentbordsflöde, sortering, avbrott, ogiltig fil och 80 ms-klipp. Målwebbläsare och representativ egen film måste fortfarande prövas.

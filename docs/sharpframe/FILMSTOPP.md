@@ -1,6 +1,6 @@
 # SharpFrame: filmstopp
 
-Arbetsversion byggd 24 oktober 2026. Inte publicerad. Den befintliga webbversionen har inte ändrats.
+Version byggd 24 oktober 2026. Publiceringskandidat med separat Chromium-grind före uppdatering av webbversionen.
 
 ## Vad du kan göra
 
@@ -40,12 +40,13 @@ Behåll alla filer i `docs/sharpframe/` tillsammans. Öppna `index.html` i en mo
 ## Vad som faktiskt är verifierat
 
 - Den tidigare arbetsversionens 28 algoritm-/strukturkontroller, 15 mockade tillståndskontroller och 8 oberoende kärnkontroller passerar. Övriga Bildanalys/v3-funktioners 59 befintliga strukturella kontroller passerar.
-- 27 nya tidslinje-/exportkontroller och 17 mockade gränssnittsflöden passerar. Testerna omfattar bland annat 1 200 slumpade tidslinjer, början/slut, överlappande inbromsningar, dubbletter, ogiltiga värden, tempo, bildrutetidsstämplar, minnesbudget, avbrott, upprepning och kodar-/skrivfel.
+- 28 nya tidslinje-/exportkontroller och 17 mockade gränssnittsflöden passerar. Testerna omfattar bland annat 1 200 slumpade tidslinjer, början/slut, överlappande inbromsningar, dubbletter, ogiltiga värden, tempo, bildrutetidsstämplar, minnesbudget, avbrott, upprepning och kodar-/skrivfel.
 - En separat granskning har dessutom kört 6 oberoende async-/formatregressioner, inklusive de verkliga tidsgränserna 5 och 2 sekunder. Rapporterade kodfel har åtgärdats och granskats igen. Detta är inte en webbläsarattest.
 - Riktig MP4/H.264 med ljud genererades, avkodades och exporterades genom den nya produktionskoden för tidslinje, renderloop och WebM-paketering. FFmpeg användes som adapter i stället för webbläsarens avkodare/kodare.
 - Tre exporter på 12,2, 13,4 och 13,7 sekunder avkodades igen. Alla 1 118 utmatningsbilder fick rätt syntetiskt bild-ID. Samtliga stillperioder hade rätt bild och längd inom en bildruta. Utdata innehöll avsiktligt ett VP8-videospår utan ljud.
 - Detta bevisar verkliga spelbara videofiler, tidslinjens matematik och WebM-paketering. Det är **inte** bevis för att den faktiska WebCodecs- och HTML-video-vägen fungerar i en målwebbläsare.
-- Riktig webbläsarstart/UI-körning var blockerad i byggmiljön. Ingen visuell, Safari/iOS-, långfilms-, HDR-, VFR- eller representativ fågelfilmstestning påstås vara genomförd. Dessa kontroller behövs före publicering.
+- Riktig Chromium/WebCodecs-körning har nu genomförts på GitHub Actions. En exporterad 11,2-sekundersfilm återavkodades: samtliga 280 bild-ID:n och båda stillperioderna stämde. Förhandsvisning, avbrott, källbyte, frånvaro av externa förfrågningar och 390 px utan horisontell overflow kontrollerades. Den första körningen fångade ett flyttalsfel vid bildrutegränser; söktider normaliseras nu konsekvent till mikrosekunder.
+- Safari/iOS-, HEVC-, långfilms-/RAM-, HDR-, VFR- och representativ fågelfilmstestning återstår. Direkt filskrivningens systemdialog är mocktestad, inte automatiserad i den verkliga browserkörningen.
 
 ## Reproducerbara kontroller
 
@@ -70,10 +71,10 @@ Inbromsningen minskar källfilmens hastighet linjärt till noll; uppstarten öka
 
 Referenser: [W3C WebCodecs](https://www.w3.org/TR/webcodecs/), [Matroskas elementspecifikation](https://www.matroska.org/technical/elements.html).
 
-### Förberedd riktig webbläsarkontroll (inte körd här)
+### Riktig webbläsarkontroll i GitHub Actions
 
 I en miljö där Chromium/Chrome och Playwright får startas:
 
     python3 tests/sharpframe/movie-browser-test.py --fixture /tmp/sharpframe-real-video/source-with-audio.mp4 --output /tmp/sharpframe-browser
 
-Valfritt: `--chromium /sökväg/till/chrome`. Testet gör faktisk filinläsning, två redigerade stopp, förhandsvisning, WebCodecs-export, nedladdning, FFmpeg-avkodning och bild-ID-kontroll av varje ruta, avbrott, källbyte och kontroll av 390 px-bredd. En skärmbild sparas för mänsklig visuell bedömning. Att testfilen finns betyder inte att testet har passerat.
+Valfritt: `--chromium /sökväg/till/chrome`. Testet gör faktisk filinläsning, två redigerade stopp, förhandsvisning, WebCodecs-export, nedladdning, FFmpeg-avkodning och bild-ID-kontroll av varje ruta, avbrott, källbyte och kontroll av 390 px-bredd. En skärmbild sparas för mänsklig visuell bedömning. Körningsutfallet för varje commit är verifieringsunderlaget, inte att testfilen finns. [Verifierad Chromium-körning](https://github.com/hktcr/Bildanalys/actions/runs/40125316382).

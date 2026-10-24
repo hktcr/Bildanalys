@@ -93,6 +93,42 @@ try:
         page.wait_for_function("document.querySelectorAll('.movie-stop').length === 0")
         assert 'hidden' in page.locator('#movie-result').get_attribute('class')
         result['checks'].append('source replacement clears old timeline and output')
+        page.locator('#sample-interval').fill('1')
+        page.locator('#top-n').fill('3')
+        page.locator('#min-gap').fill('1')
+        page.locator('#refine').uncheck()
+        page.locator('#analyze-btn').click()
+        page.wait_for_function('activeRun === null && currentResults && currentResults.length === 3', timeout=60000)
+        chosen_time = page.evaluate('displayedResults[0].time')
+        with page.expect_download() as png_download:
+            page.locator('.download-btn').first.click()
+        png = args.output / 'selected-candidate.png'
+        png_download.value.save_as(png)
+        png_pixels = subprocess.check_output(['ffmpeg', '-v', 'error', '-i', str(png), '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1'])
+        assert len(png_pixels) == 320 * 180 * 3
+        chosen_id = sum(1 << bit for bit in range(6) if sum(png_pixels[(25*320+25+bit*48)*3:(25*320+25+bit*48)*3+3])/3 > 120)
+        page.locator('.movie-candidate').first.click()
+        assert abs(float(page.locator('.movie-stop input[id$="-time"]').input_value()) - chosen_time) < .000001
+        row = page.locator('.movie-stop').first
+        row.locator('input[id$="-hold"]').fill('0.4')
+        row.locator('input[id$="-brake"]').fill('0.2')
+        row.locator('input[id$="-resume"]').fill('0.2')
+        page.locator('#movie-export').click()
+        page.locator('#movie-result').wait_for(state='visible', timeout=180000)
+        with page.expect_download() as second_download:
+            page.locator('#movie-download').click()
+        second = args.output / 'candidate-export.webm'
+        second_download.value.save_as(second)
+        second_pixels = subprocess.check_output(['ffmpeg', '-v', 'error', '-i', str(second), '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-fps_mode', 'passthrough', 'pipe:1'])
+        hold_frames = page.evaluate('''time => {const T=SharpFrameTimeline,p=T.build({duration:6,stops:[{time,hold:.4,brake:.2,resume:.2}],fps:25});return Array.from({length:p.frames},(_,i)=>i).filter(i=>T.sample(p,i/25).type==='hold');}''', chosen_time)
+        assert hold_frames
+        for index in hold_frames:
+            actual = sum(1 << bit for bit in range(6) if sum(second_pixels[index*frame_bytes+(25*320+25+bit*48)*3:index*frame_bytes+(25*320+25+bit*48)*3+3])/3 > 120)
+            assert actual == chosen_id, ('candidate freeze mismatch', index, actual, chosen_id)
+        result['checks'].append('sharpness analysis, PNG download and chosen candidate keep the identical source-frame ID in exported freeze')
+        page.set_viewport_size({'width': 1280, 'height': 900})
+        page.locator('#movie-section').screenshot(path=str(args.output / 'editor-desktop.png'))
+
         assert not errors, errors
         external = [u for u in requests if not u.startswith(('http://127.0.0.1:', 'blob:', 'data:'))]
         assert not external, external
